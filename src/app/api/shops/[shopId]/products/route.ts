@@ -288,35 +288,26 @@ export async function POST(
       return addCorsHeaders(response)
     }
 
-    // Clean up the product data for Shopify API
+    // Clean up the product data for Shopify API - just remove null values
     const cleanedProductData = {
-      title: productData.title,
-      body_html: productData.body_html,
-      vendor: productData.vendor || 'Default Vendor',
-      tags: productData.tags || '',
-      product_type: productData.product_type || '',
+      ...productData,
       variants: productData.variants?.map((variant: any) => {
-        const cleanedVariant: any = {
-          price: variant.price
+        const cleanedVariant = { ...variant }
+        // Remove null values that Shopify doesn't accept
+        if (cleanedVariant.inventory_management === null) {
+          delete cleanedVariant.inventory_management
         }
-        // Only add fields that have values
-        if (variant.option1 && variant.option1.trim()) {
-          cleanedVariant.option1 = variant.option1
+        if (cleanedVariant.option1 === null || cleanedVariant.option1 === '') {
+          delete cleanedVariant.option1
         }
-        if (variant.option2 && variant.option2.trim()) {
-          cleanedVariant.option2 = variant.option2
+        if (cleanedVariant.option2 === null || cleanedVariant.option2 === '') {
+          delete cleanedVariant.option2
         }
-        if (variant.option3 && variant.option3.trim()) {
-          cleanedVariant.option3 = variant.option3
-        }
-        if (variant.inventory_management && variant.inventory_management !== null) {
-          cleanedVariant.inventory_management = variant.inventory_management
+        if (cleanedVariant.option3 === null || cleanedVariant.option3 === '') {
+          delete cleanedVariant.option3
         }
         return cleanedVariant
-      }) || [{
-        price: '0.00'
-      }],
-      images: productData.images || []
+      }) || []
     }
 
     // Prepare the product data for Shopify API
@@ -343,6 +334,7 @@ export async function POST(
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
       console.error('Shopify error:', shopifyResponse.status, errorData)
+      console.error('Request data that failed:', JSON.stringify(shopifyProductData, null, 2))
       
       const errorResponse = NextResponse.json(
         { error: 'Failed to create product in Shopify', details: errorData },
