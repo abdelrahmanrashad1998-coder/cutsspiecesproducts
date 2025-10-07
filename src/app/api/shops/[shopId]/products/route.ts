@@ -290,12 +290,40 @@ export async function POST(
       return addCorsHeaders(response)
     }
 
-    // Prepare the product data for Shopify API
-    const shopifyProductData = {
-      product: productData
+    // Clean up the product data for Shopify API
+    const cleanedProductData = {
+      ...productData,
+      variants: productData.variants?.map((variant: any) => {
+        const cleanedVariant = { ...variant }
+        // Remove null values that Shopify doesn't accept
+        if (cleanedVariant.inventory_management === null) {
+          delete cleanedVariant.inventory_management
+        }
+        if (cleanedVariant.option1 === null || cleanedVariant.option1 === '') {
+          delete cleanedVariant.option1
+        }
+        if (cleanedVariant.option2 === null || cleanedVariant.option2 === '') {
+          delete cleanedVariant.option2
+        }
+        if (cleanedVariant.option3 === null || cleanedVariant.option3 === '') {
+          delete cleanedVariant.option3
+        }
+        return cleanedVariant
+      }) || []
     }
 
-    console.log('Sending to Shopify:', JSON.stringify(shopifyProductData, null, 2))
+    // Prepare the product data for Shopify API
+    const shopifyProductData = {
+      product: cleanedProductData
+    }
+
+    console.log('=== SHOPIFY API CALL DETAILS ===')
+    console.log('Shopify Domain:', shopifyDomain)
+    console.log('Access Token Length:', accessToken.length)
+    console.log('Product Data from Frontend:', JSON.stringify(productData, null, 2))
+    console.log('Cleaned Product Data:', JSON.stringify(cleanedProductData, null, 2))
+    console.log('Shopify API Payload:', JSON.stringify(shopifyProductData, null, 2))
+    console.log('=== END SHOPIFY API CALL DETAILS ===')
 
     // Create product in Shopify
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products.json`
@@ -308,18 +336,21 @@ export async function POST(
       body: JSON.stringify(shopifyProductData),
     })
 
-    console.log('Shopify create response status:', shopifyResponse.status)
-    console.log('Shopify response headers:', Object.fromEntries(shopifyResponse.headers.entries()))
+    console.log('=== SHOPIFY RESPONSE DETAILS ===')
+    console.log('Response Status:', shopifyResponse.status)
+    console.log('Response Status Text:', shopifyResponse.statusText)
+    console.log('Response Headers:', Object.fromEntries(shopifyResponse.headers.entries()))
+    console.log('=== END SHOPIFY RESPONSE DETAILS ===')
 
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
-      console.error('Shopify create error details:', {
-        status: shopifyResponse.status,
-        statusText: shopifyResponse.statusText,
-        errorData,
-        url: shopifyUrl,
-        requestData: shopifyProductData
-      })
+      console.error('=== SHOPIFY ERROR DETAILS ===')
+      console.error('Status:', shopifyResponse.status)
+      console.error('Status Text:', shopifyResponse.statusText)
+      console.error('Error Data:', errorData)
+      console.error('URL:', shopifyUrl)
+      console.error('Request Data:', JSON.stringify(shopifyProductData, null, 2))
+      console.error('=== END SHOPIFY ERROR DETAILS ===')
       
       let errorMessage = 'Failed to create product in Shopify'
       let errorDetails = errorData
@@ -351,7 +382,11 @@ export async function POST(
     }
 
     const shopifyProduct = await shopifyResponse.json()
-    console.log('Product created successfully:', shopifyProduct)
+    console.log('=== SHOPIFY SUCCESS RESPONSE ===')
+    console.log('Product Created Successfully:', JSON.stringify(shopifyProduct, null, 2))
+    console.log('Product ID:', shopifyProduct.product?.id)
+    console.log('Product Title:', shopifyProduct.product?.title)
+    console.log('=== END SHOPIFY SUCCESS RESPONSE ===')
 
     const response = NextResponse.json({ 
       success: true,
