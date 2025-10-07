@@ -348,16 +348,38 @@ export async function POST(
         descriptionHtml: cleanedProductData.body_html,
         vendor: cleanedProductData.vendor,
         tags: cleanedProductData.tags ? cleanedProductData.tags.split(',').map((tag: string) => tag.trim()) : [],
-        productType: cleanedProductData.product_type,
+        productType: cleanedProductData.product_type || '',
         images: cleanedProductData.images?.map((img: any) => ({
           src: img.src
         })) || [],
-        variants: cleanedProductData.variants?.map((variant: any) => ({
-          price: variant.price,
-          inventoryManagement: variant.inventory_management || 'SHOPIFY'
-        })) || [{
-          price: '0.00',
-          inventoryManagement: 'SHOPIFY'
+        variants: cleanedProductData.variants?.map((variant: any) => {
+          const variantData: any = {
+            price: variant.price
+          }
+          
+          // Add option1 if it exists and is not empty
+          if (variant.option1 && variant.option1.trim()) {
+            variantData.option1 = variant.option1
+          }
+          
+          // Add option2 if it exists and is not empty
+          if (variant.option2 && variant.option2.trim()) {
+            variantData.option2 = variant.option2
+          }
+          
+          // Add option3 if it exists and is not empty
+          if (variant.option3 && variant.option3.trim()) {
+            variantData.option3 = variant.option3
+          }
+          
+          // Only add inventory management if it's not null
+          if (variant.inventory_management && variant.inventory_management !== null) {
+            variantData.inventoryManagement = variant.inventory_management
+          }
+          
+          return variantData
+        }) || [{
+          price: '0.00'
         }]
       }
     }
@@ -409,6 +431,7 @@ export async function POST(
     // Check for user errors
     if (productCreateResult?.userErrors?.length > 0) {
       console.error('Shopify user errors:', productCreateResult.userErrors)
+      console.error('Full GraphQL response:', JSON.stringify(graphqlResponse, null, 2))
       const errorResponse = NextResponse.json(
         { error: 'Product creation failed', details: productCreateResult.userErrors },
         { status: 400 }
