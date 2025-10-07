@@ -105,16 +105,45 @@ export async function GET(
     const data = await shopifyResponse.json()
     let products = data.products || []
 
-    // Try to get collections data using a simple GraphQL query
+    // Use GraphQL to get products with collections data
     try {
-      const graphqlUrl = `https://${shopifyDomain}/admin/api/2023-10/graphql.json`
+      const graphqlUrl = `https://${shopifyDomain}/admin/api/2024-10/graphql.json`
       const graphqlQuery = {
         query: `
-          query getProductCollections {
-            products(first: 50) {
+          query getProducts($first: Int!) {
+            products(first: $first) {
               edges {
                 node {
                   id
+                  title
+                  handle
+                  status
+                  descriptionHtml
+                  vendor
+                  productType
+                  tags
+                  createdAt
+                  updatedAt
+                  images(first: 5) {
+                    nodes {
+                      id
+                      url
+                      altText
+                    }
+                  }
+                  variants(first: 10) {
+                    nodes {
+                      id
+                      title
+                      price
+                      sku
+                      inventoryQuantity
+                      selectedOptions {
+                        name
+                        value
+                      }
+                    }
+                  }
                   collections(first: 10) {
                     edges {
                       node {
@@ -125,10 +154,20 @@ export async function GET(
                     }
                   }
                 }
+                cursor
+              }
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
               }
             }
           }
-        `
+        `,
+        variables: {
+          first: 50
+        }
       }
       
       const graphqlResponse = await fetch(graphqlUrl, {
@@ -144,32 +183,49 @@ export async function GET(
         const graphqlData = await graphqlResponse.json()
         
         if (graphqlData.data?.products?.edges) {
-          // Create a map of product ID to collections
-          const productCollectionsMap: { [productId: string]: any[] } = {}
-          
-          graphqlData.data.products.edges.forEach((edge: any) => {
-            const productId = parseInt(edge.node.id.split('/').pop()) || 0
-            const collections = edge.node.collections.edges.map((cEdge: any) => ({
-              id: parseInt(cEdge.node.id.split('/').pop()) || 0,
-              title: cEdge.node.title,
-              handle: cEdge.node.handle
-            }))
-            
-            if (collections.length > 0) {
-              productCollectionsMap[productId] = collections
+          // Transform GraphQL response to match REST API format
+          products = graphqlData.data.products.edges.map((edge: any) => {
+            const product = edge.node
+            return {
+              id: parseInt(product.id.split('/').pop()) || 0,
+              title: product.title,
+              handle: product.handle,
+              body_html: product.descriptionHtml,
+              vendor: product.vendor,
+              product_type: product.productType,
+              tags: product.tags.join(', '),
+              status: product.status.toLowerCase(),
+              created_at: product.createdAt,
+              updated_at: product.updatedAt,
+              images: product.images.nodes.map((img: any) => ({
+                id: parseInt(img.id.split('/').pop()) || 0,
+                src: img.url,
+                alt: img.altText
+              })),
+              variants: product.variants.nodes.map((variant: any) => ({
+                id: parseInt(variant.id.split('/').pop()) || 0,
+                title: variant.title,
+                price: variant.price,
+                sku: variant.sku,
+                inventory_quantity: variant.inventoryQuantity,
+                option1: variant.selectedOptions[0]?.value || 'Default',
+                option2: variant.selectedOptions[1]?.value || null,
+                option3: variant.selectedOptions[2]?.value || null
+              })),
+              collections: product.collections.edges.map((cEdge: any) => ({
+                id: parseInt(cEdge.node.id.split('/').pop()) || 0,
+                title: cEdge.node.title,
+                handle: cEdge.node.handle
+              }))
             }
           })
-
-          // Add collections data to products
-          products = products.map((product: any) => ({
-            ...product,
-            collections: productCollectionsMap[product.id] || []
-          }))
         }
+      } else {
+        console.warn('GraphQL request failed, falling back to REST API')
       }
     } catch (error) {
-      console.warn('Failed to fetch collections via GraphQL, continuing without collections:', error)
-      // Add empty collections array to products
+      console.warn('Failed to fetch products via GraphQL, using REST API data:', error)
+      // Add empty collections array to products from REST API
       products = products.map((product: any) => ({
         ...product,
         collections: []
@@ -337,33 +393,12 @@ export async function POST(
     }
     console.log('Cleaned product data:', JSON.stringify(cleanedProductData, null, 2))
 
-    // Create product in Shopify using GraphQL API (with REST fallback)
-    console.log('Step 11: Setting up API URLs...')
+    // Create product in Shopify using GraphQL API
+    console.log('Step 11: Setting up GraphQL API...')
     const graphqlUrl = `https://${shopifyDomain}/admin/api/2024-10/graphql.json`
-    const restUrl = `https://${shopifyDomain}/admin/api/2024-01/products.json`
     console.log('GraphQL URL:', graphqlUrl)
-    console.log('REST URL:', restUrl)
     
-    // Try REST API first since it's more reliable
-    console.log('Step 12: Using REST API directly...')
-    const restProductData = {
-      product: cleanedProductData
-    }
-    
-    console.log('REST API payload:', JSON.stringify(restProductData, null, 2))
-    
-    const shopifyResponse = await fetch(restUrl, {
-      method: 'POST',
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(restProductData),
-    })
-    
-    const useGraphQL = false // Force REST API for now
-    
-    // Build GraphQL mutation
+    // Build optimized GraphQL mutation
     const graphqlMutation = `
       mutation productCreate($product: ProductCreateInput!) {
         productCreate(product: $product) {
@@ -372,6 +407,30 @@ export async function POST(
             title
             handle
             status
+            descriptionHtml
+            vendor
+            productType
+            tags
+            images(first: 10) {
+              nodes {
+                id
+                url
+                altText
+              }
+            }
+            variants(first: 10) {
+              nodes {
+                id
+                title
+                price
+                sku
+                inventoryQuantity
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
           }
           userErrors {
             field
@@ -389,35 +448,18 @@ export async function POST(
         tags: cleanedProductData.tags ? cleanedProductData.tags.split(',').map((tag: string) => tag.trim()) : [],
         productType: cleanedProductData.product_type || '',
         images: cleanedProductData.images?.map((img: any) => ({
-          src: img.src
+          originalSource: img.src,
+          alt: img.alt || cleanedProductData.title
         })) || [],
-        variants: cleanedProductData.variants?.map((variant: any) => {
-          const variantData: any = {
-            price: variant.price || '0.00'
-          }
-          
-          // Add option1 (now has default value)
-          if (variant.option1) {
-            variantData.option1 = variant.option1
-          }
-          
-          // Add option2 (now has default value)
-          if (variant.option2) {
-            variantData.option2 = variant.option2
-          }
-          
-          // Add option3 (now has default value)
-          if (variant.option3) {
-            variantData.option3 = variant.option3
-          }
-          
-          // Add inventory management (now has default value)
-          if (variant.inventory_management) {
-            variantData.inventoryManagement = variant.inventory_management
-          }
-          
-          return variantData
-        }) || [{
+        variants: cleanedProductData.variants?.map((variant: any) => ({
+          price: variant.price || '0.00',
+          sku: variant.sku || '',
+          inventoryQuantity: variant.inventory_quantity || 0,
+          inventoryManagement: variant.inventory_management || 'shopify',
+          option1: variant.option1 || 'Default',
+          option2: variant.option2 || null,
+          option3: variant.option3 || null
+        })) || [{
           price: '0.00',
           option1: 'Default',
           inventoryManagement: 'shopify'
@@ -427,6 +469,18 @@ export async function POST(
 
     console.log('Creating product in Shopify:', productData.title)
     console.log('GraphQL variables:', JSON.stringify(graphqlVariables, null, 2))
+    
+    const shopifyResponse = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: graphqlMutation,
+        variables: graphqlVariables
+      }),
+    })
     
     // Ensure we have a response
     if (!shopifyResponse) {
@@ -441,8 +495,7 @@ export async function POST(
 
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
-      console.error('Shopify error:', shopifyResponse.status, errorData)
-      console.error('API used:', useGraphQL ? 'GraphQL' : 'REST')
+      console.error('Shopify GraphQL error:', shopifyResponse.status, errorData)
       
       const errorResponse = NextResponse.json(
         { error: 'Failed to create product in Shopify', details: errorData },
@@ -452,23 +505,41 @@ export async function POST(
     }
 
     const shopifyResponseData = await shopifyResponse.json()
-    console.log('Shopify REST API response:', JSON.stringify(shopifyResponseData, null, 2))
+    console.log('Shopify GraphQL response:', JSON.stringify(shopifyResponseData, null, 2))
     
-    // Handle REST response
-    console.log('REST API response structure:', JSON.stringify(shopifyResponseData, null, 2))
-    
-    // Check if response has 'product' or 'products' array
-    let shopifyProduct = null
-    if (shopifyResponseData.product) {
-      shopifyProduct = shopifyResponseData.product
-      console.log('Found product in response:', shopifyProduct)
-    } else if (shopifyResponseData.products && Array.isArray(shopifyResponseData.products) && shopifyResponseData.products.length > 0) {
-      shopifyProduct = shopifyResponseData.products[0]
-      console.log('Using first product from products array:', shopifyProduct)
+    // Handle GraphQL response
+    if (shopifyResponseData.errors) {
+      console.error('GraphQL errors:', shopifyResponseData.errors)
+      const errorResponse = NextResponse.json(
+        { error: 'GraphQL errors occurred', details: shopifyResponseData.errors },
+        { status: 400 }
+      )
+      return addCorsHeaders(errorResponse)
     }
     
+    const productCreateResult = shopifyResponseData.data?.productCreate
+    if (!productCreateResult) {
+      console.error('No productCreate result in response:', shopifyResponseData)
+      const errorResponse = NextResponse.json(
+        { error: 'Invalid GraphQL response structure', details: shopifyResponseData },
+        { status: 500 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    // Check for user errors
+    if (productCreateResult.userErrors && productCreateResult.userErrors.length > 0) {
+      console.error('User errors:', productCreateResult.userErrors)
+      const errorResponse = NextResponse.json(
+        { error: 'Product creation failed', userErrors: productCreateResult.userErrors },
+        { status: 400 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    const shopifyProduct = productCreateResult.product
     if (!shopifyProduct || !shopifyProduct.id) {
-      console.error('REST API: No product created. Response structure:', shopifyResponseData)
+      console.error('No product created. Response structure:', shopifyResponseData)
       const errorResponse = NextResponse.json(
         { error: 'Product creation failed - no product ID returned from Shopify', details: shopifyResponseData },
         { status: 500 }
@@ -476,17 +547,42 @@ export async function POST(
       return addCorsHeaders(errorResponse)
     }
     
-    const productId = shopifyProduct.id
-    const finalProductData = shopifyProduct
+    // Transform GraphQL response to match expected format
+    const productId = parseInt(shopifyProduct.id.split('/').pop()) || 0
+    const finalProductData = {
+      id: productId,
+      title: shopifyProduct.title,
+      handle: shopifyProduct.handle,
+      body_html: shopifyProduct.descriptionHtml,
+      vendor: shopifyProduct.vendor,
+      product_type: shopifyProduct.productType,
+      tags: shopifyProduct.tags.join(', '),
+      status: shopifyProduct.status.toLowerCase(),
+      images: shopifyProduct.images.nodes.map((img: any) => ({
+        id: parseInt(img.id.split('/').pop()) || 0,
+        src: img.url,
+        alt: img.altText
+      })),
+      variants: shopifyProduct.variants.nodes.map((variant: any) => ({
+        id: parseInt(variant.id.split('/').pop()) || 0,
+        title: variant.title,
+        price: variant.price,
+        sku: variant.sku,
+        inventory_quantity: variant.inventoryQuantity,
+        option1: variant.selectedOptions[0]?.value || 'Default',
+        option2: variant.selectedOptions[1]?.value || null,
+        option3: variant.selectedOptions[2]?.value || null
+      }))
+    }
 
     console.log('Product created successfully in Shopify with ID:', productId)
-    console.log('API used: REST')
+    console.log('API used: GraphQL')
 
     const response = NextResponse.json({ 
       success: true,
       product: finalProductData,
       message: 'Product created successfully',
-      apiUsed: 'REST'
+      apiUsed: 'GraphQL'
     })
     return addCorsHeaders(response)
   } catch (error: any) {
