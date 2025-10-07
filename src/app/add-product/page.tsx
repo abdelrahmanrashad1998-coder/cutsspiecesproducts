@@ -129,7 +129,7 @@ export default function AddProductPage() {
     try {
       const token = await firebaseUser.getIdToken()
       
-      const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
+      const response = await fetch(`/api/shops/${selectedShop.shopifyDomain}/collections`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -383,9 +383,9 @@ export default function AddProductPage() {
         return
       }
 
-      console.log('Making API call to:', `/api/shops/${selectedShop.id}/products`)
+      console.log('Making API call to:', `/api/shops/${selectedShop.shopifyDomain}/products`)
       
-      const response = await fetch(`/api/shops/${selectedShop.id}/products`, {
+      const response = await fetch(`/api/shops/${selectedShop.shopifyDomain}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ export default function AddProductPage() {
         // Add product to collection if one is selected
         if (selectedCollection && selectedCollection !== "none" && productData.product?.id) {
           try {
-            const collectionResponse = await fetch(`/api/shops/${selectedShop.id}/collections/${selectedCollection}/products`, {
+            const collectionResponse = await fetch(`/api/shops/${selectedShop.shopifyDomain}/collections/${selectedCollection}/products`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,

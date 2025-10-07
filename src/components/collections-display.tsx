@@ -128,7 +128,7 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
 
       const token = await firebaseUser.getIdToken()
       
-      const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
+      const response = await fetch(`/api/shops/${selectedShop.shopifyDomain}/collections`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
