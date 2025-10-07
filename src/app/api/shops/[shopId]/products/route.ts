@@ -9,6 +9,8 @@ function addCorsHeaders(response: NextResponse) {
   response.headers.set('Access-Control-Allow-Origin', '*')
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  response.headers.set('Access-Control-Max-Age', '86400')
+  response.headers.set('Access-Control-Allow-Credentials', 'true')
   return response
 }
 
@@ -18,18 +20,33 @@ export async function OPTIONS() {
 }
 
 async function verifyAuthToken(request: NextRequest) {
+  console.log('Verifying auth token...')
+  
   const authHeader = request.headers.get('authorization')
+  console.log('Auth header present:', !!authHeader)
+  console.log('Auth header starts with Bearer:', authHeader?.startsWith('Bearer '))
+  
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.error('No valid authorization token provided')
     throw new Error('No authorization token provided')
   }
   
   if (!auth) {
+    console.error('Firebase Admin SDK not initialized for auth verification')
     throw new Error('Firebase Admin SDK not initialized')
   }
   
   const token = authHeader.split('Bearer ')[1]
-  const decodedToken = await auth.verifyIdToken(token)
-  return decodedToken
+  console.log('Token length:', token.length)
+  
+  try {
+    const decodedToken = await auth.verifyIdToken(token)
+    console.log('Token verified successfully for user:', decodedToken.uid)
+    return decodedToken
+  } catch (tokenError) {
+    console.error('Token verification failed:', tokenError)
+    throw new Error('Invalid or expired token')
+  }
 }
 
 export async function GET(
@@ -235,13 +252,63 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ shopId: string }> }
 ) {
+  console.log('=== PRODUCT CREATION REQUEST START ===')
+  console.log('Request URL:', request.url)
+  console.log('Request method:', request.method)
+  console.log('Request headers:', Object.fromEntries(request.headers.entries()))
+  
   try {
     console.log('Starting product creation process...')
     
-    const decodedToken = await verifyAuthToken(request)
+    // Parse params first
+    let shopId: string
+    try {
+      const resolvedParams = await params
+      shopId = resolvedParams.shopId
+      console.log('Shop ID from params:', shopId)
+    } catch (paramError) {
+      console.error('Error parsing params:', paramError)
+      const errorResponse = NextResponse.json(
+        { error: 'Invalid shop ID parameter' },
+        { status: 400 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    // Parse request body
+    let productData: any
+    try {
+      productData = await request.json()
+      console.log('Product data parsed successfully:', {
+        hasTitle: !!productData.title,
+        hasDescription: !!productData.body_html,
+        hasImages: !!productData.images,
+        imageCount: productData.images?.length || 0
+      })
+    } catch (jsonError) {
+      console.error('Error parsing request JSON:', jsonError)
+      const errorResponse = NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    // Verify authentication
+    let decodedToken: any
+    try {
+      decodedToken = await verifyAuthToken(request)
+      console.log('Authentication successful for user:', decodedToken.uid)
+    } catch (authError) {
+      console.error('Authentication failed:', authError)
+      const errorResponse = NextResponse.json(
+        { error: 'Authentication failed', details: authError instanceof Error ? authError.message : 'Unknown auth error' },
+        { status: 401 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
     const userId = decodedToken.uid
-    const { shopId } = await params
-    const productData = await request.json()
     
     console.log('Product creation request:', {
       userId,
@@ -283,7 +350,7 @@ export async function POST(
     }
 
     const shopData = shopDoc.data()
-    if (shopData?.userId !== userId) {
+    if (!shopData || shopData.userId !== userId) {
       console.error('Unauthorized access to shop:', { shopUserId: shopData?.userId, requestUserId: userId })
       const errorResponse = NextResponse.json(
         { error: 'Unauthorized access to shop' },
@@ -387,6 +454,7 @@ export async function POST(
     console.log('Product creation completed successfully')
     return addCorsHeaders(response)
   } catch (error) {
+    console.error('=== PRODUCT CREATION ERROR ===')
     console.error('Error creating product:', error)
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     console.error('Error details:', {
@@ -396,6 +464,7 @@ export async function POST(
       status: (error as any)?.status,
       response: (error as any)?.response
     })
+    console.error('=== END ERROR LOG ===')
     
     // Provide more specific error messages
     if (error instanceof Error) {
