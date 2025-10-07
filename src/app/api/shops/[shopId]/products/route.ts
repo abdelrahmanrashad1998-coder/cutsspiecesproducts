@@ -299,23 +299,23 @@ export async function POST(
       return addCorsHeaders(response)
     }
 
-    // Clean up the product data for Shopify API - just remove null values
+    // Clean up the product data for Shopify API - replace null values with defaults
     const cleanedProductData = {
       ...productData,
       variants: productData.variants?.map((variant: any) => {
         const cleanedVariant = { ...variant }
-        // Remove null values that Shopify doesn't accept
+        // Replace null values with appropriate defaults
         if (cleanedVariant.inventory_management === null) {
-          delete cleanedVariant.inventory_management
+          cleanedVariant.inventory_management = 'shopify'
         }
         if (cleanedVariant.option1 === null || cleanedVariant.option1 === '') {
-          delete cleanedVariant.option1
+          cleanedVariant.option1 = 'Default'
         }
         if (cleanedVariant.option2 === null || cleanedVariant.option2 === '') {
-          delete cleanedVariant.option2
+          cleanedVariant.option2 = 'Default'
         }
         if (cleanedVariant.option3 === null || cleanedVariant.option3 === '') {
-          delete cleanedVariant.option3
+          cleanedVariant.option3 = 'Default'
         }
         return cleanedVariant
       }) || []
@@ -354,32 +354,34 @@ export async function POST(
         })) || [],
         variants: cleanedProductData.variants?.map((variant: any) => {
           const variantData: any = {
-            price: variant.price
+            price: variant.price || '0.00'
           }
           
-          // Add option1 if it exists and is not empty
-          if (variant.option1 && variant.option1.trim()) {
+          // Add option1 (now has default value)
+          if (variant.option1) {
             variantData.option1 = variant.option1
           }
           
-          // Add option2 if it exists and is not empty
-          if (variant.option2 && variant.option2.trim()) {
+          // Add option2 (now has default value)
+          if (variant.option2) {
             variantData.option2 = variant.option2
           }
           
-          // Add option3 if it exists and is not empty
-          if (variant.option3 && variant.option3.trim()) {
+          // Add option3 (now has default value)
+          if (variant.option3) {
             variantData.option3 = variant.option3
           }
           
-          // Only add inventory management if it's not null
-          if (variant.inventory_management && variant.inventory_management !== null) {
+          // Add inventory management (now has default value)
+          if (variant.inventory_management) {
             variantData.inventoryManagement = variant.inventory_management
           }
           
           return variantData
         }) || [{
-          price: '0.00'
+          price: '0.00',
+          option1: 'Default',
+          inventoryManagement: 'shopify'
         }]
       }
     }
