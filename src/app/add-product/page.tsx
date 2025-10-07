@@ -342,16 +342,34 @@ export default function AddProductPage() {
         body_html: productData.description,
         vendor: productData.vendor || 'Default Vendor',
         tags: productData.tags,
-        variants: variants.map(variant => ({
-          price: variant.price,
-          option1: variant.option1,
-          option2: variant.option2,
-          option3: variant.option3,
-          inventory_management: variant.inventory_tracking ? 'shopify' : null,
-        })),
+        variants: variants.map(variant => {
+          const variantData: any = {
+            price: variant.price
+          }
+          
+          // Only add options if they have values
+          if (variant.option1 && variant.option1.trim()) {
+            variantData.option1 = variant.option1
+          }
+          if (variant.option2 && variant.option2.trim()) {
+            variantData.option2 = variant.option2
+          }
+          if (variant.option3 && variant.option3.trim()) {
+            variantData.option3 = variant.option3
+          }
+          
+          // Only add inventory_management if tracking is enabled
+          if (variant.inventory_tracking) {
+            variantData.inventory_management = 'shopify'
+          }
+          
+          return variantData
+        }),
         images: finalImageUrls.map(url => ({ src: url }))
       }
 
+      console.log('Product payload being sent:', JSON.stringify(productPayload, null, 2))
+      
       // Get auth token for API call
       const token = await firebaseUser?.getIdToken()
       if (!token) {
@@ -365,6 +383,8 @@ export default function AddProductPage() {
         return
       }
 
+      console.log('Making API call to:', `/api/shops/${selectedShop.id}/products`)
+      
       const response = await fetch(`/api/shops/${selectedShop.id}/products`, {
         method: 'POST',
         headers: {
@@ -373,9 +393,12 @@ export default function AddProductPage() {
         },
         body: JSON.stringify(productPayload),
       })
+      
+      console.log('API response status:', response.status)
 
       if (response.ok) {
         const productData = await response.json()
+        console.log('Product created successfully:', productData)
         
         // Add product to collection if one is selected
         if (selectedCollection && selectedCollection !== "none" && productData.product?.id) {
@@ -406,6 +429,7 @@ export default function AddProductPage() {
         router.push('/dashboard')
       } else {
         const errorData = await response.json()
+        console.error('Product creation failed:', errorData)
         toast.error(errorData.error || 'Failed to create product')
       }
     } catch (error) {
