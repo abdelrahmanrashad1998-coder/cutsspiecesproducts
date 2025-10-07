@@ -236,13 +236,25 @@ export async function POST(
   { params }: { params: Promise<{ shopId: string }> }
 ) {
   try {
+    console.log('Starting product creation process...')
+    
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
     const { shopId } = await params
     const productData = await request.json()
+    
+    console.log('Product creation request:', {
+      userId,
+      shopId,
+      productTitle: productData.title,
+      hasImages: productData.images?.length > 0,
+      imageCount: productData.images?.length || 0,
+      variantCount: productData.variants?.length || 0
+    })
 
     // Check if database is initialized
     if (!db) {
+      console.error('Database not initialized for product creation')
       const errorResponse = NextResponse.json(
         { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
         { status: 500 }
@@ -259,8 +271,10 @@ export async function POST(
     }
 
     // Verify the shop belongs to the user
+    console.log('Fetching shop data from Firestore...')
     const shopDoc = await db.collection('shops').doc(shopId).get()
     if (!shopDoc.exists) {
+      console.error('Shop not found in Firestore:', shopId)
       const errorResponse = NextResponse.json(
         { error: 'Shop not found' },
         { status: 404 }
@@ -270,6 +284,7 @@ export async function POST(
 
     const shopData = shopDoc.data()
     if (shopData?.userId !== userId) {
+      console.error('Unauthorized access to shop:', { shopUserId: shopData?.userId, requestUserId: userId })
       const errorResponse = NextResponse.json(
         { error: 'Unauthorized access to shop' },
         { status: 403 }
@@ -281,7 +296,14 @@ export async function POST(
     const shopifyDomain = shopData.shopifyDomain
     const accessToken = shopData.shopifyAccessToken
 
+    console.log('Shop credentials:', {
+      domain: shopifyDomain,
+      hasAccessToken: !!accessToken,
+      accessTokenLength: accessToken?.length || 0
+    })
+
     if (!shopifyDomain || !accessToken) {
+      console.error('Missing shop credentials:', { shopifyDomain, hasAccessToken: !!accessToken })
       const errorResponse = NextResponse.json(
         { error: 'Shop credentials not found' },
         { status: 400 }
@@ -291,6 +313,8 @@ export async function POST(
 
     // Create product in Shopify using shop-specific credentials
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products.json`
+    console.log('Creating product in Shopify:', { url: shopifyUrl, productTitle: productData.title })
+    
     const shopifyResponse = await fetch(shopifyUrl, {
       method: 'POST',
       headers: {
@@ -302,54 +326,90 @@ export async function POST(
       }),
     })
 
+    console.log('Shopify response status:', shopifyResponse.status)
+
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
-      console.error('Shopify create product error:', errorData)
-      return NextResponse.json(
+      console.error('Shopify create product error:', {
+        status: shopifyResponse.status,
+        statusText: shopifyResponse.statusText,
+        error: errorData
+      })
+      const errorResponse = NextResponse.json(
         { error: 'Failed to create product in Shopify', details: errorData },
         { status: shopifyResponse.status }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     const shopifyProduct = await shopifyResponse.json()
+    console.log('Product created successfully in Shopify:', { productId: shopifyProduct.product?.id })
     
     // Save product to Firestore for local tracking
-    const firestoreProduct = await createProductAdmin({
-      shopifyId: shopifyProduct.product.id.toString(),
-      title: shopifyProduct.product.title,
-      description: shopifyProduct.product.body_html,
-      vendor: shopifyProduct.product.vendor,
-      category: shopifyProduct.product.product_type,
-      images: shopifyProduct.product.images || [],
-      variants: shopifyProduct.product.variants || [],
-      userId: userId,
-      isActive: true
-    })
+    console.log('Saving product to Firestore...')
+    
+    // Extract price from first variant if available
+    const firstVariant = shopifyProduct.product.variants?.[0]
+    const price = firstVariant ? parseFloat(firstVariant.price) || 0 : 0
+    
+    // Extract image URLs from Shopify product
+    const imageUrls = shopifyProduct.product.images?.map((img: any) => img.src) || []
+    
+    let firestoreProduct = null
+    try {
+      firestoreProduct = await createProductAdmin({
+        shopifyId: shopifyProduct.product.id.toString(),
+        title: shopifyProduct.product.title,
+        description: shopifyProduct.product.body_html,
+        category: shopifyProduct.product.product_type,
+        images: imageUrls,
+        variants: shopifyProduct.product.variants || [],
+        userId: userId,
+        shopId: shopId,
+        price: price
+      })
+      
+      console.log('Product saved to Firestore:', { firestoreId: firestoreProduct.id })
+    } catch (firestoreError) {
+      console.error('Failed to save product to Firestore:', firestoreError)
+      // Continue with success response since Shopify product was created successfully
+      console.log('Continuing despite Firestore error - Shopify product was created successfully')
+    }
 
     const response = NextResponse.json({ 
       success: true,
       product: {
         id: shopifyProduct.product.id,
         ...shopifyProduct.product,
-        firestoreId: firestoreProduct.id
+        firestoreId: firestoreProduct?.id || null
       }
     })
+    console.log('Product creation completed successfully')
     return addCorsHeaders(response)
   } catch (error) {
     console.error('Error creating product:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as any)?.code || 'UNKNOWN',
+      status: (error as any)?.status,
+      response: (error as any)?.response
+    })
     
     // Provide more specific error messages
     if (error instanceof Error) {
       if (error.message.includes('No valid authorization token')) {
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { error: 'Authentication required' },
           { status: 401 }
         )
+        return addCorsHeaders(errorResponse)
       }
       
       // Handle Firebase initialization errors
       if (error.message === 'Firebase Admin SDK not initialized') {
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { 
             error: 'Firebase not configured', 
             message: 'Firebase Admin SDK is not properly initialized. Please check your environment variables.',
@@ -357,24 +417,45 @@ export async function POST(
           },
           { status: 500 }
         )
+        return addCorsHeaders(errorResponse)
+      }
+      
+      // Handle Firestore connection errors
+      if (error.message.includes('DECODER routines::unsupported') || (error as any).code === 2) {
+        const errorResponse = NextResponse.json(
+          { 
+            error: 'Firebase connection error', 
+            message: 'Unable to connect to Firebase. Please check your Firebase configuration.',
+            details: 'This is likely a Firebase Admin SDK private key formatting issue.'
+          },
+          { status: 500 }
+        )
+        return addCorsHeaders(errorResponse)
       }
       
       if (error.message.includes('Shopify')) {
-        return NextResponse.json(
-          { error: 'Failed to create product in Shopify' },
+        const errorResponse = NextResponse.json(
+          { error: 'Failed to create product in Shopify', details: error.message },
           { status: 500 }
         )
+        return addCorsHeaders(errorResponse)
       }
+      
       if (error.message.includes('Firebase') || error.message.includes('Firestore')) {
-        return NextResponse.json(
-          { error: 'Database connection error' },
+        const errorResponse = NextResponse.json(
+          { error: 'Database connection error', details: error.message },
           { status: 500 }
         )
+        return addCorsHeaders(errorResponse)
       }
     }
     
     const errorResponse = NextResponse.json(
-      { error: 'Failed to create product' },
+      { 
+        error: 'Failed to create product',
+        details: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     )
     return addCorsHeaders(errorResponse)
