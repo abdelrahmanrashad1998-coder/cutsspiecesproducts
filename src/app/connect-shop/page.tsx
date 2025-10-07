@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth, Shop } from '@/contexts/AuthContext'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { toast } from 'sonner'
 import { 
   Loader2, 
@@ -227,15 +228,19 @@ export default function ManageShopsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <Settings className="mr-3 h-8 w-8" />
-            Manage Shops
-          </h1>
-          <p className="text-gray-600 mt-2">Connect, edit, and manage your Shopify stores</p>
+    <DashboardLayout>
+      <div className="space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight flex items-center">
+              <Settings className="mr-3 h-8 w-8" />
+              Manage Shops
+            </h1>
+            <p className="text-muted-foreground">
+              Connect, edit, and manage your Shopify stores
+            </p>
+          </div>
         </div>
 
         {/* Existing Shops */}
@@ -522,6 +527,6 @@ export default function ManageShopsPage() {
           </Card>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
