@@ -32,19 +32,80 @@ try {
         // Handle escaped newlines in environment variable
         privateKey = privateKey?.replace(/\\n/g, '\n')
         console.log('Using direct private key (length:', privateKey?.length, ')')
+        
+        // Additional validation and formatting for deployment environments
+        if (privateKey && !privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+          console.warn('Private key may not be properly formatted. Expected to contain "-----BEGIN PRIVATE KEY-----"')
+        }
+        
+        // Ensure proper key format for deployment
+        if (privateKey && !privateKey.endsWith('\n')) {
+          privateKey = privateKey + '\n'
+          console.log('Added trailing newline to private key')
+        }
       }
       
+      // Create a more robust credential configuration
+      // Use environment variables if available, fallback to hardcoded values
+      const projectId = process.env.FIREBASE_PROJECT_ID || "shopify-product-add"
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk-fbsvc@shopify-product-add.iam.gserviceaccount.com"
+      
+      const credentialConfig = {
+        projectId: projectId,
+        clientEmail: clientEmail,
+        privateKey: privateKey,
+      }
+      
+      console.log('Credential config created with projectId:', credentialConfig.projectId)
+      console.log('Client email:', credentialConfig.clientEmail)
+      console.log('Private key starts with:', privateKey?.substring(0, 50) + '...')
+      
       const firebaseAdminConfig = {
-        credential: cert({
-          projectId: "shopify-product-add",
-          clientEmail: "firebase-adminsdk-fbsvc@shopify-product-add.iam.gserviceaccount.com",
-          privateKey: privateKey,
-        }),
+        credential: cert(credentialConfig),
       }
       
       console.log('Firebase Admin config created, initializing app...')
-      app = initializeApp(firebaseAdminConfig)
-      console.log('Firebase Admin SDK initialized successfully')
+      
+      try {
+        app = initializeApp(firebaseAdminConfig)
+        console.log('Firebase Admin SDK initialized successfully')
+      } catch (initError: any) {
+        console.error('Initial Firebase Admin initialization failed:', initError.message)
+        
+        // Try alternative initialization with different key formatting
+        if (initError.message.includes('DECODER routines::unsupported')) {
+          console.log('Attempting alternative private key formatting...')
+          
+          // Try with different newline handling
+          const alternativePrivateKey = privateKey
+            ?.replace(/\\n/g, '\n')
+            ?.replace(/\r\n/g, '\n')
+            ?.replace(/\r/g, '\n')
+          
+          if (alternativePrivateKey !== privateKey) {
+            console.log('Trying with reformatted private key...')
+            const alternativeConfig = {
+              credential: cert({
+                projectId: projectId,
+                clientEmail: clientEmail,
+                privateKey: alternativePrivateKey,
+              }),
+            }
+            
+            try {
+              app = initializeApp(alternativeConfig)
+              console.log('Firebase Admin SDK initialized successfully with alternative formatting')
+            } catch (altError) {
+              console.error('Alternative initialization also failed:', altError)
+              throw initError // Throw original error
+            }
+          } else {
+            throw initError
+          }
+        } else {
+          throw initError
+        }
+      }
     }
   } else {
     app = getApps()[0]
