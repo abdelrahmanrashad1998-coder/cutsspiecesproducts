@@ -359,7 +359,13 @@ export default function AddProductPage() {
         return
       }
 
-      const response = await fetch('/api/products', {
+      // Use shop-specific API route instead of global route
+      if (!selectedShop) {
+        toast.error('Please select a shop first')
+        return
+      }
+
+      const response = await fetch(`/api/shops/${selectedShop.id}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
