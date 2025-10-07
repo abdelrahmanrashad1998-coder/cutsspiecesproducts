@@ -1,0 +1,54 @@
+[debug] [2025-10-07T22:08:12.047Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.050Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.051Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.052Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.052Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.052Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.052Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.052Z] Checked if tokens are valid: true, expires at: 1759878387574
+[debug] [2025-10-07T22:08:12.052Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/ [none]
+[debug] [2025-10-07T22:08:12.052Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/ x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.070Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/storage.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.070Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/storage.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.071Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.071Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.071Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/identitytoolkit.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.071Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.072Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/fcm.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.072Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/fcm.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.072Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.072Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.073Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.073Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.073Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-07T22:08:12.073Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:12.074Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseio.com [none]
+[debug] [2025-10-07T22:08:12.074Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseio.com x-goog-quota-user=projects/shopify-product-add
+[debug] [2025-10-07T22:08:13.250Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseio.com 403
+[debug] [2025-10-07T22:08:13.250Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseio.com [omitted]
+[debug] [2025-10-07T22:08:13.256Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2025-10-07T22:08:13.256Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.271Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/fcm.googleapis.com 200
+[debug] [2025-10-07T22:08:13.271Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/fcm.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.278Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/identitytoolkit.googleapis.com 200
+[debug] [2025-10-07T22:08:13.278Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.286Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-07T22:08:13.286Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.286Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-07T22:08:13.286Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.303Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-07T22:08:13.303Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.309Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/storage.googleapis.com 200
+[debug] [2025-10-07T22:08:13.309Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/storage.googleapis.com [omitted]
+[debug] [2025-10-07T22:08:13.673Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/ 200
+[debug] [2025-10-07T22:08:13.673Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/shopify-product-add/services/ [omitted]
