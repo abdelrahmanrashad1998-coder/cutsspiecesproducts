@@ -18,7 +18,9 @@ import {
   FolderOpen,
   Loader2,
   ExternalLink,
-  Eye
+  Eye,
+  Check,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth, Shop } from '@/contexts/AuthContext'
@@ -58,6 +60,8 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
   const [filteredCollections, setFilteredCollections] = useState<Collection[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { firebaseUser } = useAuth()
 
@@ -80,14 +84,19 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
     setFilteredCollections(filtered)
   }, [collections, searchTerm])
 
-  const fetchCollections = async () => {
+  const fetchCollections = async (isRefresh = false) => {
     if (!selectedShop) {
       setError('No shop selected')
       return
     }
 
-    setIsLoading(true)
+    if (isRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setIsLoading(true)
+    }
     setError(null)
+    setShowSuccess(false)
     
     try {
       if (!firebaseUser) {
@@ -111,6 +120,12 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
         
         const collectionsArray = data.collections || []
         setCollections(collectionsArray)
+        
+        if (isRefresh) {
+          // Show success state briefly
+          setShowSuccess(true)
+          setTimeout(() => setShowSuccess(false), 1500)
+        }
         
         if (collectionsArray.length === 0) {
           toast.info('No collections found in this shop')
@@ -165,7 +180,14 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
       setError(errorMessage)
       toast.error(`Connection error: ${errorMessage}`)
     } finally {
-      setIsLoading(false)
+      if (isRefresh) {
+        // Add a small delay for smoother animation
+        setTimeout(() => {
+          setIsRefreshing(false)
+        }, 300)
+      } else {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -213,8 +235,19 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
             Collections ({filteredCollections.length})
           </div>
           {selectedShop && (
-            <Button variant="outline" size="sm" onClick={fetchCollections}>
-              <Loader2 className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => fetchCollections(true)}
+              disabled={isRefreshing || isLoading}
+            >
+              {isRefreshing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : showSuccess ? (
+                <Check className="mr-2 h-4 w-4 text-green-600" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
               Refresh
             </Button>
           )}
@@ -230,7 +263,7 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
           <div className="text-center py-8 text-red-500">
             <FolderOpen className="mx-auto h-12 w-12 text-red-400 mb-4" />
             <p>{error}</p>
-            <Button variant="outline" onClick={fetchCollections} className="mt-4">
+            <Button variant="outline" onClick={() => fetchCollections(false)} className="mt-4">
               Try Again
             </Button>
           </div>

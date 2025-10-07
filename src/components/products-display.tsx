@@ -19,7 +19,9 @@ import {
   Trash2, 
   Package,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Check,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -58,6 +60,8 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [shopCurrency, setShopCurrency] = useState<string>('USD')
   const { firebaseUser } = useAuth()
@@ -82,11 +86,16 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
     setFilteredProducts(filtered)
   }, [products, searchTerm])
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (isRefresh = false) => {
     if (!selectedShop) return
 
-    setIsLoading(true)
+    if (isRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setIsLoading(true)
+    }
     setError(null)
+    setShowSuccess(false)
     
     try {
       if (!firebaseUser) {
@@ -107,6 +116,12 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
         setProducts(data.products || [])
         const currency = data.shop?.currency || selectedShop.currency || 'USD'
         setShopCurrency(currency)
+        
+        if (isRefresh) {
+          // Show success state briefly
+          setShowSuccess(true)
+          setTimeout(() => setShowSuccess(false), 1500)
+        }
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to fetch products')
@@ -116,7 +131,14 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
       setError('Error fetching products')
       toast.error('Error fetching products')
     } finally {
-      setIsLoading(false)
+      if (isRefresh) {
+        // Add a small delay for smoother animation
+        setTimeout(() => {
+          setIsRefreshing(false)
+        }, 300)
+      } else {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -153,8 +175,19 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
             Products ({filteredProducts.length})
           </div>
           {selectedShop && (
-            <Button variant="outline" size="sm" onClick={fetchProducts}>
-              <Loader2 className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => fetchProducts(true)}
+              disabled={isRefreshing || isLoading}
+            >
+              {isRefreshing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : showSuccess ? (
+                <Check className="mr-2 h-4 w-4 text-green-600" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
               Refresh
             </Button>
           )}
@@ -170,7 +203,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
           <div className="text-center py-8 text-red-500">
             <Package className="mx-auto h-12 w-12 text-red-400 mb-4" />
             <p>{error}</p>
-            <Button variant="outline" onClick={fetchProducts} className="mt-4">
+            <Button variant="outline" onClick={() => fetchProducts(false)} className="mt-4">
               Try Again
             </Button>
           </div>
