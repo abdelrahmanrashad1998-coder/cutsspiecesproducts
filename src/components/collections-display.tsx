@@ -82,7 +82,6 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
 
   const fetchCollections = async () => {
     if (!selectedShop) {
-      console.log('No shop selected')
       setError('No shop selected')
       return
     }
@@ -98,11 +97,6 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
       }
 
       const token = await firebaseUser.getIdToken()
-      console.log('=== COLLECTIONS FETCH DEBUG ===')
-      console.log('Fetching collections for shop:', selectedShop.id)
-      console.log('Selected shop data:', selectedShop)
-      console.log('Firebase user:', firebaseUser.uid)
-      console.log('API URL:', `/api/shops/${selectedShop.id}/collections`)
       
       const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
         headers: {
@@ -111,16 +105,9 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
         },
       })
 
-      console.log('Collections API response status:', response.status)
-      console.log('Collections API response headers:', Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
-        console.log('Collections data received:', {
-          hasCollections: !!data.collections,
-          collectionsCount: data.collections?.length || 0,
-          shopInfo: data.shop
-        })
         
         const collectionsArray = data.collections || []
         setCollections(collectionsArray)
@@ -136,19 +123,9 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
         
         // First, let's see the raw response text
         const responseText = await response.text()
-        console.error('Collections API error - Raw response:', responseText)
-        console.error('Response status:', response.status, response.statusText)
         
         try {
           const errorData = responseText ? JSON.parse(responseText) : {}
-          console.error('Collections API error response:', {
-            status: response.status,
-            statusText: response.statusText,
-            responseText,
-            parsedErrorData: errorData,
-            isObject: typeof errorData === 'object',
-            isEmpty: Object.keys(errorData).length === 0
-          })
           
           errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`
           errorDetails = errorData.details || errorData
@@ -173,23 +150,17 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
             }
             
             // Log full diagnostic information
-            console.error('Collection Diagnostic Results:', diagnostic)
-            console.error('Full diagnostic message:', generateDiagnosticMessage(diagnostic))
           } else {
             toast.error(`Collections error: ${errorMessage}`)
           }
         } catch (parseError) {
-          console.error('Failed to parse error response:', parseError)
           errorMessage = `HTTP ${response.status}: ${response.statusText}`
           toast.error(`Network error: ${errorMessage}`)
         }
         
-        console.error('Final error message:', errorMessage)
-        console.error('Final error details:', errorDetails)
         setError(errorMessage)
       }
     } catch (error: any) {
-      console.error('Collections fetch error:', error)
       const errorMessage = error.message || 'Network error occurred'
       setError(errorMessage)
       toast.error(`Connection error: ${errorMessage}`)
@@ -198,174 +169,10 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
     }
   }
 
-  const debugCollections = async () => {
-    if (!selectedShop || !firebaseUser) return
 
-    try {
-      const token = await firebaseUser.getIdToken()
-      console.log('Running debug for shop:', selectedShop.id)
-      
-      const response = await fetch('/api/debug-collections', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ shopId: selectedShop.id }),
-      })
 
-      const data = await response.json()
-      console.log('Debug response:', data)
-      
-      if (response.ok) {
-        toast.success('Debug info logged to console')
-      } else {
-        toast.error(`Debug failed: ${data.error}`)
-      }
-    } catch (error) {
-      console.error('Debug error:', error)
-      toast.error('Debug failed')
-    }
-  }
 
-  const testAPI = async () => {
-    try {
-      console.log('Testing simple API endpoint...')
-      
-      // Test GET
-      const getResponse = await fetch('/api/test-collections')
-      const getData = await getResponse.json()
-      console.log('Test API GET response:', getData)
-      
-      // Test POST
-      const postResponse = await fetch('/api/test-collections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ test: 'data', shopId: selectedShop?.id })
-      })
-      const postData = await postResponse.json()
-      console.log('Test API POST response:', postData)
-      
-      toast.success('API test completed - check console')
-    } catch (error) {
-      console.error('API test error:', error)
-      toast.error('API test failed')
-    }
-  }
 
-  const runComprehensiveTest = async () => {
-    if (!selectedShop || !firebaseUser) {
-      toast.error('No shop selected or not authenticated')
-      return
-    }
-
-    try {
-      toast.loading('Running comprehensive collections test...')
-      const token = await firebaseUser.getIdToken()
-      
-      const response = await fetch('/api/test-collections-comprehensive', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ shopId: selectedShop.id }),
-      })
-
-      const data = await response.json()
-      console.log('=== COMPREHENSIVE TEST RESULTS ===', data)
-      
-      if (response.ok) {
-        toast.success('Comprehensive test completed - check console for detailed results')
-      } else {
-        toast.error(`Test failed: ${data.error}`)
-      }
-    } catch (error) {
-      console.error('Comprehensive test error:', error)
-      toast.error('Comprehensive test failed')
-    }
-  }
-
-  const testShopCredentials = async () => {
-    if (!selectedShop || !firebaseUser) {
-      toast.error('No shop selected or not authenticated')
-      return
-    }
-
-    try {
-      toast.loading('Testing shop credentials and domain...')
-      const token = await firebaseUser.getIdToken()
-      
-      const response = await fetch('/api/direct-shopify-test', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ shopId: selectedShop.id }),
-      })
-
-      const data = await response.json()
-      console.log('=== SHOP CREDENTIALS TEST RESULTS ===', data)
-      
-      if (response.ok) {
-        const recommendations = data.testResults?.recommendations || []
-        if (recommendations.length > 0) {
-          console.log('Recommendations:', recommendations.join(', '))
-          toast.success(`Credentials test completed - found ${recommendations.length} recommendations (check console)`)
-        } else {
-          toast.success('Credentials test completed - check console for results')
-        }
-      } else {
-        toast.error(`Credentials test failed: ${data.error}`)
-      }
-    } catch (error) {
-      console.error('Credentials test error:', error)
-      toast.error('Credentials test failed')
-    }
-  }
-
-  const fixShopDomain = async () => {
-    if (!selectedShop || !firebaseUser) {
-      toast.error('No shop selected or not authenticated')
-      return
-    }
-
-    try {
-      toast.loading('Auto-fixing shop domain...')
-      const token = await firebaseUser.getIdToken()
-      
-      const response = await fetch('/api/fix-shop-domain', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ shopId: selectedShop.id }),
-      })
-
-      const data = await response.json()
-      console.log('=== SHOP DOMAIN FIX RESULTS ===', data)
-      
-      if (response.ok && data.success) {
-        toast.success(`Domain fixed! Old: ${data.oldDomain} -> New: ${data.newDomain}`)
-        console.log('Shop info updated:', data.shopInfo)
-        
-        // Refresh collections after successful fix
-        setTimeout(() => {
-          fetchCollections()
-        }, 1000)
-      } else {
-        toast.error(`Domain fix failed: ${data.error || data.message}`)
-        if (data.testedDomains) {
-          console.log('Tested domains:', data.testedDomains)
-        }
-      }
-    } catch (error) {
-      console.error('Domain fix error:', error)
-      toast.error('Domain fix failed')
-    }
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
@@ -406,27 +213,10 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
             Collections ({filteredCollections.length})
           </div>
           {selectedShop && (
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={fetchCollections}>
-                <Loader2 className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-              <Button variant="outline" size="sm" onClick={debugCollections}>
-                Debug
-              </Button>
-              <Button variant="outline" size="sm" onClick={testAPI}>
-                Test API
-              </Button>
-              <Button variant="outline" size="sm" onClick={runComprehensiveTest}>
-                Full Test
-              </Button>
-              <Button variant="outline" size="sm" onClick={testShopCredentials}>
-                Test Shop
-              </Button>
-              <Button variant="outline" size="sm" onClick={fixShopDomain}>
-                Fix Domain
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={fetchCollections}>
+              <Loader2 className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
           )}
         </CardTitle>
       </CardHeader>
