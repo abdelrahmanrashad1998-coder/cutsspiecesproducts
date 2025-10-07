@@ -87,7 +87,10 @@ export async function POST(
     }
 
     // Add product to collection using Shopify API
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/collections/${collectionId}/products.json`
+    // Use the correct Shopify API endpoint for adding products to collections
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/collects.json`
+    
+    console.log('Adding product to collection:', { productId, collectionId, shopifyUrl })
     
     const shopifyResponse = await fetch(shopifyUrl, {
       method: 'POST',
@@ -96,13 +99,18 @@ export async function POST(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        product_id: parseInt(productId)
+        collect: {
+          product_id: parseInt(productId),
+          collection_id: parseInt(collectionId)
+        }
       }),
     })
+    
+    console.log('Collection API response status:', shopifyResponse.status)
 
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
-      console.error('Shopify API error:', errorData)
+      console.error('Shopify collection API error:', shopifyResponse.status, errorData)
       
       const errorResponse = NextResponse.json(
         { error: 'Failed to add product to collection', details: errorData },
@@ -112,6 +120,7 @@ export async function POST(
     }
 
     const data = await shopifyResponse.json()
+    console.log('Product added to collection successfully:', data)
     
     const response = NextResponse.json({ 
       success: true,
