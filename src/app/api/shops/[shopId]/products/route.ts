@@ -337,7 +337,8 @@ export async function POST(
       vendor: productData.vendor,
       tags: productData.tags,
       variantsCount: productData.variants?.length || 0,
-      imagesCount: productData.images?.length || 0
+      imagesCount: productData.images?.length || 0,
+      variants: productData.variants
     })
     
     if (!productData.title || !productData.body_html) {
@@ -536,27 +537,55 @@ export async function POST(
       )
       
       if (hasOptions) {
-        // Create options based on the variants
-        const optionNames = new Set()
+        // Create options based on the variants - use more meaningful names
+        const optionMap = new Map()
+        
         cleanedProductData.variants.forEach((variant: any) => {
-          if (variant.option1) optionNames.add('Option 1')
-          if (variant.option2) optionNames.add('Option 2') 
-          if (variant.option3) optionNames.add('Option 3')
+          if (variant.option1 && variant.option1.trim()) {
+            if (!optionMap.has('Size')) optionMap.set('Size', new Set())
+            optionMap.get('Size').add(variant.option1.trim())
+          }
+          if (variant.option2 && variant.option2.trim()) {
+            if (!optionMap.has('Color')) optionMap.set('Color', new Set())
+            optionMap.get('Color').add(variant.option2.trim())
+          }
+          if (variant.option3 && variant.option3.trim()) {
+            if (!optionMap.has('Material')) optionMap.set('Material', new Set())
+            optionMap.get('Material').add(variant.option3.trim())
+          }
         })
         
-        optionNames.forEach((optionName, index) => {
-          productOptions.push({
-            name: optionName,
-            values: cleanedProductData.variants
-              .map((variant: any) => {
-                if (index === 0 && variant.option1) return { name: variant.option1 }
-                if (index === 1 && variant.option2) return { name: variant.option2 }
-                if (index === 2 && variant.option3) return { name: variant.option3 }
-                return null
+        // Convert to product options format
+        optionMap.forEach((values, optionName) => {
+          if (values.size > 0) {
+            const optionValues = Array.from(values)
+              .filter((value: any) => value && typeof value === 'string' && value.trim()) // Filter out empty values
+              .map((value: any) => ({ name: (value as string).trim() }))
+            
+            // Only add option if we have valid values
+            if (optionValues.length > 0) {
+              productOptions.push({
+                name: optionName,
+                values: optionValues
               })
-              .filter(Boolean)
-          })
+            }
+          }
         })
+        
+        console.log('Created product options:', productOptions)
+      }
+    }
+
+    // If no valid options were created, create a simple default option
+    if (productOptions.length === 0 && cleanedProductData.variants && cleanedProductData.variants.length > 0) {
+      const firstVariant = cleanedProductData.variants[0]
+      if (firstVariant.price && firstVariant.price !== '0.00') {
+        // Create a simple default option for single variant products
+        productOptions.push({
+          name: 'Default',
+          values: [{ name: 'Default' }]
+        })
+        console.log('Created default option for single variant product')
       }
     }
 
