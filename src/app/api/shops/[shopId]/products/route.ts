@@ -235,8 +235,6 @@ export async function POST(
   { params }: { params: Promise<{ shopId: string }> }
 ) {
   try {
-    console.log('=== PRODUCT CREATION API CALLED ===')
-    
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
     const { shopId } = await params
@@ -317,13 +315,7 @@ export async function POST(
       product: cleanedProductData
     }
 
-    console.log('=== SHOPIFY API CALL DETAILS ===')
-    console.log('Shopify Domain:', shopifyDomain)
-    console.log('Access Token Length:', accessToken.length)
-    console.log('Product Data from Frontend:', JSON.stringify(productData, null, 2))
-    console.log('Cleaned Product Data:', JSON.stringify(cleanedProductData, null, 2))
-    console.log('Shopify API Payload:', JSON.stringify(shopifyProductData, null, 2))
-    console.log('=== END SHOPIFY API CALL DETAILS ===')
+    console.log('Creating product in Shopify:', productData.title)
 
     // Create product in Shopify
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products.json`
@@ -336,21 +328,11 @@ export async function POST(
       body: JSON.stringify(shopifyProductData),
     })
 
-    console.log('=== SHOPIFY RESPONSE DETAILS ===')
-    console.log('Response Status:', shopifyResponse.status)
-    console.log('Response Status Text:', shopifyResponse.statusText)
-    console.log('Response Headers:', Object.fromEntries(shopifyResponse.headers.entries()))
-    console.log('=== END SHOPIFY RESPONSE DETAILS ===')
+    console.log('Shopify response status:', shopifyResponse.status)
 
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
-      console.error('=== SHOPIFY ERROR DETAILS ===')
-      console.error('Status:', shopifyResponse.status)
-      console.error('Status Text:', shopifyResponse.statusText)
-      console.error('Error Data:', errorData)
-      console.error('URL:', shopifyUrl)
-      console.error('Request Data:', JSON.stringify(shopifyProductData, null, 2))
-      console.error('=== END SHOPIFY ERROR DETAILS ===')
+      console.error('Shopify error:', shopifyResponse.status, errorData)
       
       let errorMessage = 'Failed to create product in Shopify'
       let errorDetails = errorData
@@ -382,11 +364,18 @@ export async function POST(
     }
 
     const shopifyProduct = await shopifyResponse.json()
-    console.log('=== SHOPIFY SUCCESS RESPONSE ===')
-    console.log('Product Created Successfully:', JSON.stringify(shopifyProduct, null, 2))
-    console.log('Product ID:', shopifyProduct.product?.id)
-    console.log('Product Title:', shopifyProduct.product?.title)
-    console.log('=== END SHOPIFY SUCCESS RESPONSE ===')
+    
+    // Check if product was actually created
+    if (!shopifyProduct.product || !shopifyProduct.product.id) {
+      console.error('Shopify returned success but no product was created:', shopifyProduct)
+      const errorResponse = NextResponse.json(
+        { error: 'Product creation failed - no product ID returned from Shopify' },
+        { status: 500 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+
+    console.log('Product created successfully in Shopify with ID:', shopifyProduct.product.id)
 
     const response = NextResponse.json({ 
       success: true,
