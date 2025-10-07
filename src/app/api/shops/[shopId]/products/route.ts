@@ -322,6 +322,12 @@ export async function POST(
     const productData = await request.json()
     
     console.log('Request processed successfully:', { shopId, userId, productTitle: productData.title })
+    
+    // Debug: Log Firebase Admin SDK status
+    console.log('Firebase Admin SDK status:', {
+      auth: auth ? 'initialized' : 'not initialized',
+      db: db ? 'initialized' : 'not initialized'
+    })
 
     // Validate required fields
     console.log('Step 4: Validating required fields...')
@@ -353,22 +359,40 @@ export async function POST(
       
       // Debug: Let's see what shops actually exist for this user
       console.log(`Shop ${shopId} not found. Checking all shops for user ${userId}...`)
-      const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
-      const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      console.log('Available shops for user:', userShops)
-      
-      const response = NextResponse.json(
-        { 
-          error: 'Shop not found',
-          debug: {
-            requestedShopId: shopId,
-            userId: userId,
-            availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain }))
-          }
-        },
-        { status: 404 }
-      )
-      return addCorsHeaders(response)
+      try {
+        const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
+        const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        console.log('Available shops for user:', userShops)
+        
+        const response = NextResponse.json(
+          { 
+            error: 'Shop not found',
+            message: `Shop with ID "${shopId}" does not exist or you don't have access to it.`,
+            debug: {
+              requestedShopId: shopId,
+              userId: userId,
+              availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain }))
+            }
+          },
+          { status: 404 }
+        )
+        return addCorsHeaders(response)
+      } catch (queryError) {
+        console.error('Error querying shops:', queryError)
+        const response = NextResponse.json(
+          { 
+            error: 'Shop not found',
+            message: `Shop with ID "${shopId}" does not exist.`,
+            debug: {
+              requestedShopId: shopId,
+              userId: userId,
+              queryError: queryError instanceof Error ? queryError.message : 'Unknown error'
+            }
+          },
+          { status: 404 }
+        )
+        return addCorsHeaders(response)
+      }
     }
 
     console.log('Step 8: Verifying shop ownership...')

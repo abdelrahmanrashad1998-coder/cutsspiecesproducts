@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/firebase-admin'
-import { db } from '@/lib/firebase-admin'
-
-// CORS headers helper
-function addCorsHeaders(response: NextResponse) {
-  response.headers.set('Access-Control-Allow-Origin', '*')
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
-  return response
-}
-
-// Handle preflight requests
-export async function OPTIONS() {
-  return addCorsHeaders(new NextResponse(null, { status: 200 }))
-}
+import { auth, db } from '@/lib/firebase-admin'
 
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -34,15 +20,12 @@ export async function GET(request: NextRequest) {
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
 
-    console.log('Debug: Fetching all shops for user:', userId)
-
-    // Check if database is initialized
     if (!db) {
-      const errorResponse = NextResponse.json(
-        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
-        { status: 500 }
-      )
-      return addCorsHeaders(errorResponse)
+      return NextResponse.json({
+        error: 'Database not initialized',
+        userId,
+        timestamp: new Date().toISOString()
+      }, { status: 500 })
     }
 
     // Get all shops for this user
@@ -51,33 +34,21 @@ export async function GET(request: NextRequest) {
       id: doc.id, 
       ...doc.data(),
       // Remove sensitive data
-      shopifyAccessToken: doc.data().shopifyAccessToken ? '***HIDDEN***' : null
+      shopifyAccessToken: doc.data()?.shopifyAccessToken ? '***hidden***' : undefined
     }))
 
-    console.log('Debug: Found shops:', userShops)
-
-    const response = NextResponse.json({ 
+    return NextResponse.json({
       userId,
+      shopCount: userShops.length,
       shops: userShops,
-      count: userShops.length
+      timestamp: new Date().toISOString()
     })
-    return addCorsHeaders(response)
 
-  } catch (error: any) {
-    console.error('Error in debug shops endpoint:', error)
-    
-    if (error.message === 'No authorization token provided') {
-      const errorResponse = NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-      return addCorsHeaders(errorResponse)
-    }
-    
-    const errorResponse = NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    )
-    return addCorsHeaders(errorResponse)
+  } catch (error) {
+    return NextResponse.json({
+      error: 'Failed to fetch shops',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { status: 500 })
   }
 }
