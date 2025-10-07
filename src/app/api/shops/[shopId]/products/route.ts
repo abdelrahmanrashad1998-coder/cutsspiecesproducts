@@ -57,8 +57,21 @@ export async function GET(
     // Verify the shop belongs to the user
     const shopDoc = await db.collection('shops').doc(shopId).get()
     if (!shopDoc.exists) {
+      // Debug: Let's see what shops actually exist for this user
+      console.log(`Shop ${shopId} not found. Checking all shops for user ${userId}...`)
+      const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
+      const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      console.log('Available shops for user:', userShops)
+      
       const errorResponse = NextResponse.json(
-        { error: 'Shop not found' },
+        { 
+          error: 'Shop not found',
+          debug: {
+            requestedShopId: shopId,
+            userId: userId,
+            availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain }))
+          }
+        },
         { status: 404 }
       )
       return addCorsHeaders(errorResponse)
@@ -337,8 +350,22 @@ export async function POST(
     console.log('Step 7: Checking if shop exists...')
     if (!shopDoc.exists) {
       console.log('Shop not found for ID:', shopId)
+      
+      // Debug: Let's see what shops actually exist for this user
+      console.log(`Shop ${shopId} not found. Checking all shops for user ${userId}...`)
+      const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
+      const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      console.log('Available shops for user:', userShops)
+      
       const response = NextResponse.json(
-        { error: 'Shop not found' },
+        { 
+          error: 'Shop not found',
+          debug: {
+            requestedShopId: shopId,
+            userId: userId,
+            availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain }))
+          }
+        },
         { status: 404 }
       )
       return addCorsHeaders(response)
