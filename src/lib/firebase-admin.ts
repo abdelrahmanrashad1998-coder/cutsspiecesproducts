@@ -48,10 +48,18 @@ try {
       console.error('Private key format is invalid. Check your FIREBASE_ADMIN_PRIVATE_KEY.')
     }
   }
+  
+  // Set app to null to ensure services are also null
+  app = null
 }
 
 // Export the services with error handling
 export const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
+
+// Add a helper function to check if Firebase is properly initialized
+export function isFirebaseInitialized(): boolean {
+  return app !== null && auth !== null && db !== null
+}
 
 export default app

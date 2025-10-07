@@ -9,6 +9,10 @@ async function verifyAuthToken(request: NextRequest) {
     throw new Error('No authorization token provided')
   }
   
+  if (!auth) {
+    throw new Error('Firebase Admin SDK not initialized')
+  }
+  
   const token = authHeader.split('Bearer ')[1]
   const decodedToken = await auth.verifyIdToken(token)
   return decodedToken
@@ -23,6 +27,14 @@ export async function PUT(
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
     const { shopId } = await params
+
+    // Check if database is initialized
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+    }
 
     // Verify the shop belongs to the user
     const shopDoc = await db.collection('shops').doc(shopId).get()
@@ -108,6 +120,18 @@ export async function PUT(
       )
     }
     
+    // Handle Firebase initialization errors
+    if (error.message === 'Firebase Admin SDK not initialized') {
+      return NextResponse.json(
+        { 
+          error: 'Firebase not configured', 
+          message: 'Firebase Admin SDK is not properly initialized. Please check your environment variables.',
+          details: 'Check FIREBASE_ADMIN_PRIVATE_KEY and other Firebase configuration variables.'
+        },
+        { status: 500 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -124,6 +148,14 @@ export async function DELETE(
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
     const { shopId } = await params
+
+    // Check if database is initialized
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+    }
 
     // Verify the shop belongs to the user
     const shopDoc = await db.collection('shops').doc(shopId).get()
@@ -156,6 +188,18 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+    
+    // Handle Firebase initialization errors
+    if (error.message === 'Firebase Admin SDK not initialized') {
+      return NextResponse.json(
+        { 
+          error: 'Firebase not configured', 
+          message: 'Firebase Admin SDK is not properly initialized. Please check your environment variables.',
+          details: 'Check FIREBASE_ADMIN_PRIVATE_KEY and other Firebase configuration variables.'
+        },
+        { status: 500 }
       )
     }
     

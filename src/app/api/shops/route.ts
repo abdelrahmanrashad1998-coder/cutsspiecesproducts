@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createShopAdmin, getShopsByUserIdAdmin } from '@/lib/firestore-admin'
 import { testShopifyConnection } from '@/lib/shopify-test'
-import { auth } from '@/lib/firebase-admin'
+import { auth, db } from '@/lib/firebase-admin'
 
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('No authorization token provided')
+  }
+  
+  if (!auth) {
+    throw new Error('Firebase Admin SDK not initialized')
   }
   
   const token = authHeader.split('Bearer ')[1]
@@ -19,6 +23,14 @@ export async function GET(request: NextRequest) {
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
 
+    // Check if database is initialized
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+    }
+
     const shops = await getShopsByUserIdAdmin(userId)
     return NextResponse.json({ shops })
   } catch (error: any) {
@@ -29,6 +41,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+    
+    // Handle Firebase initialization errors
+    if (error.message === 'Firebase Admin SDK not initialized') {
+      return NextResponse.json(
+        { 
+          error: 'Firebase not configured', 
+          message: 'Firebase Admin SDK is not properly initialized. Please check your environment variables.',
+          details: 'Check FIREBASE_ADMIN_PRIVATE_KEY and other Firebase configuration variables.'
+        },
+        { status: 500 }
       )
     }
     
@@ -54,6 +78,14 @@ export async function POST(request: NextRequest) {
   try {
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
+    
+    // Check if database is initialized
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+    }
     
     const { 
       shopifyDomain, 
@@ -108,6 +140,18 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('Error creating shop:', error)
+    
+    // Handle Firebase initialization errors
+    if (error.message === 'Firebase Admin SDK not initialized') {
+      return NextResponse.json(
+        { 
+          error: 'Firebase not configured', 
+          message: 'Firebase Admin SDK is not properly initialized. Please check your environment variables.',
+          details: 'Check FIREBASE_ADMIN_PRIVATE_KEY and other Firebase configuration variables.'
+        },
+        { status: 500 }
+      )
+    }
     
     // Handle Firestore permission errors specifically
     if (error.code === 'permission-denied') {
