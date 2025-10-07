@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Table, 
   TableBody, 
@@ -66,7 +67,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [error, setError] = useState<string | null>(null)
   const [shopCurrency, setShopCurrency] = useState<string>('USD')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(25)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
@@ -243,6 +244,30 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
               />
             </div>
 
+            {/* Rows per page selector */}
+            <div className="mb-4">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Rows per page</p>
+                <Select
+                  value={`${itemsPerPage}`}
+                  onValueChange={(value) => {
+                    handleItemsPerPageChange(Number(value))
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={itemsPerPage} />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+                      <SelectItem key={pageSize} value={`${pageSize}`}>
+                        {pageSize}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {/* Products Table */}
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12">
@@ -256,11 +281,6 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {filteredProducts.length} of {products.length} products
-                  </p>
-                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -375,18 +395,16 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                 </Table>
                 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-4">
-                    <DataTablePagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      totalItems={filteredProducts.length}
-                      itemsPerPage={itemsPerPage}
-                      onPageChange={handlePageChange}
-                      onItemsPerPageChange={handleItemsPerPageChange}
-                    />
-                  </div>
-                )}
+                <div className="mt-4">
+                  <DataTablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={filteredProducts.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                  />
+                </div>
               </div>
             )}
           </>

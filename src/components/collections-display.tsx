@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Table, 
   TableBody, 
@@ -65,7 +66,7 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
   const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(25)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
@@ -303,6 +304,30 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
               />
             </div>
 
+            {/* Rows per page selector */}
+            <div className="mb-4">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Rows per page</p>
+                <Select
+                  value={`${itemsPerPage}`}
+                  onValueChange={(value) => {
+                    handleItemsPerPageChange(Number(value))
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={itemsPerPage} />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+                      <SelectItem key={pageSize} value={`${pageSize}`}>
+                        {pageSize}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {/* Collections Table */}
             {filteredCollections.length === 0 ? (
               <div className="text-center py-12">
@@ -316,11 +341,6 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {filteredCollections.length} of {collections.length} collections
-                  </p>
-                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -428,18 +448,16 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
                 </Table>
                 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-4">
-                    <DataTablePagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      totalItems={filteredCollections.length}
-                      itemsPerPage={itemsPerPage}
-                      onPageChange={handlePageChange}
-                      onItemsPerPageChange={handleItemsPerPageChange}
-                    />
-                  </div>
-                )}
+                <div className="mt-4">
+                  <DataTablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={filteredCollections.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                  />
+                </div>
               </div>
             )}
           </>
