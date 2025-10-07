@@ -420,13 +420,57 @@ export async function POST(
 
     console.log('Step 8: Verifying shop ownership...')
     const shopData = shopDoc.data()
+    console.log('Shop ownership check:', {
+      shopUserId: shopData?.userId,
+      currentUserId: userId,
+      shopId: shopId,
+      shopName: shopData?.shopName,
+      shopifyDomain: shopData?.shopifyDomain
+    })
+    
     if (shopData?.userId !== userId) {
       console.log('Unauthorized access - userId mismatch')
-      const response = NextResponse.json(
-        { error: 'Unauthorized access to shop' },
-        { status: 403 }
-      )
-      return addCorsHeaders(response)
+      
+      // Get all shops for this user to help with debugging
+      try {
+        const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
+        const userShops = userShopsQuery.docs.map(doc => ({ 
+          id: doc.id, 
+          shopName: doc.data().shopName,
+          shopifyDomain: doc.data().shopifyDomain,
+          userId: doc.data().userId
+        }))
+        
+        const response = NextResponse.json(
+          { 
+            error: 'Unauthorized access to shop',
+            message: `You don't have access to shop "${shopId}". This shop belongs to user "${shopData?.userId}" but you are user "${userId}".`,
+            debug: {
+              requestedShopId: shopId,
+              currentUserId: userId,
+              shopOwnerUserId: shopData?.userId,
+              yourShops: userShops
+            }
+          },
+          { status: 403 }
+        )
+        return addCorsHeaders(response)
+      } catch (queryError) {
+        const response = NextResponse.json(
+          { 
+            error: 'Unauthorized access to shop',
+            message: `You don't have access to shop "${shopId}". This shop belongs to user "${shopData?.userId}" but you are user "${userId}".`,
+            debug: {
+              requestedShopId: shopId,
+              currentUserId: userId,
+              shopOwnerUserId: shopData?.userId,
+              queryError: queryError instanceof Error ? queryError.message : 'Unknown error'
+            }
+          },
+          { status: 403 }
+        )
+        return addCorsHeaders(response)
+      }
     }
 
     // Get shop credentials
