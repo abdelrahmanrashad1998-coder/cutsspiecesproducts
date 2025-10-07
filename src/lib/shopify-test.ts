@@ -126,7 +126,7 @@ export async function testShopifyCollectionsAccess(
   try {
     const cleanDomain = shopifyDomain.replace(/^https?:\/\//, '').replace(/\.myshopify\.com$/, '') + '.myshopify.com'
     
-    const response = await axios.get(`https://${cleanDomain}/admin/api/2024-01/collections.json?limit=1`, {
+    const response = await axios.get(`https://${cleanDomain}/admin/api/2024-01/collection_listings.json?limit=1`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
@@ -134,11 +134,11 @@ export async function testShopifyCollectionsAccess(
       timeout: 10000
     })
 
-    if (response.data && response.data.collections) {
+    if (response.data && response.data.collection_listings) {
       return {
         success: true,
-        message: 'Collections access confirmed',
-        collectionCount: response.data.collections.length
+        message: 'Collection listings access confirmed',
+        collectionCount: response.data.collection_listings.length
       }
     } else {
       return {
@@ -156,7 +156,7 @@ export async function testShopifyCollectionsAccess(
           errorMessage = 'Invalid access token for collections'
           break
         case 403:
-          errorMessage = 'Access token does not have collections permissions'
+          errorMessage = 'Access token does not have collection_listings permissions'
           break
         case 404:
           errorMessage = 'Collections endpoint not found'

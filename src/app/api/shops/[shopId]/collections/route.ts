@@ -8,6 +8,10 @@ async function verifyAuthToken(request: NextRequest) {
     throw new Error('No authorization token provided')
   }
   
+  if (!auth) {
+    throw new Error('Firebase Admin SDK not initialized')
+  }
+  
   const token = authHeader.split('Bearer ')[1]
   const decodedToken = await auth.verifyIdToken(token)
   return decodedToken
@@ -31,6 +35,14 @@ export async function GET(
 
     // Verify the shop belongs to the user
     console.log('Fetching shop document for shopId:', shopId, 'userId:', userId)
+    
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+    }
+    
     const shopDoc = await db.collection('shops').doc(shopId).get()
     
     if (!shopDoc.exists) {
@@ -150,10 +162,10 @@ export async function GET(
       console.log('Shop info API error:', shopError.message)
     }
 
-    // Use the latest stable API version for collections
-    console.log('Testing collections endpoint...')
+    // Use the latest stable API version for collection_listings (sales channel endpoint)
+    console.log('Testing collection_listings endpoint...')
     const endpoints = [
-      `https://${shopifyDomain}/admin/api/2024-01/collections.json`
+      `https://${shopifyDomain}/admin/api/2024-01/collection_listings.json`
     ]
     
     let response = null
@@ -248,11 +260,11 @@ export async function GET(
           if (firstError.status === 401) {
             errorMessage = 'Authentication failed - Invalid access token'
             suggestions.push('Check if your Shopify access token is correct and has not expired')
-            suggestions.push('Verify the token has read permissions for collections')
+            suggestions.push('Verify the token has read permissions for collection_listings')
           } else if (firstError.status === 403) {
             errorMessage = 'Access forbidden - Insufficient permissions'
-            suggestions.push('Ensure your access token has permission to read collections')
-            suggestions.push('Check if your app has the required scopes enabled')
+            suggestions.push('Ensure your access token has permission to read collection_listings')
+            suggestions.push('Check if your app has the required scopes enabled (read_products, read_product_listings)')
           } else if (firstError.status === 404) {
             errorMessage = 'API endpoint not found'
             suggestions.push('Verify your shop domain is correct (should be your-shop.myshopify.com)')
@@ -282,10 +294,10 @@ export async function GET(
     console.log('Shopify API response headers:', Object.fromEntries(response.headers.entries()))
 
     const data = await response.json()
-    const collections = data.collections || []
+    const collections = data.collection_listings || []
     
-    console.log('Collections response data:', {
-      hasCollections: !!data.collections,
+    console.log('Collection listings response data:', {
+      hasCollectionListings: !!data.collection_listings,
       collectionsCount: collections.length,
       dataKeys: Object.keys(data)
     })

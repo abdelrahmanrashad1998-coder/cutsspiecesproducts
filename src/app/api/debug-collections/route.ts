@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
       console.log('Shop info test error:', shopInfoTest)
     }
 
-    // Test the collections API call
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2023-10/collections.json`
+    // Test the collection_listings API call
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/collection_listings.json`
     console.log('Testing Shopify API call to:', shopifyUrl)
     
     const response = await fetch(shopifyUrl, {

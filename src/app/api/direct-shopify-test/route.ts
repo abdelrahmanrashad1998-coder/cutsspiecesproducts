@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     let collectionsResult = null
     try {
-      const collectionsResponse = await fetch(`https://${workingDomain}/admin/api/2023-10/collections.json`, {
+      const collectionsResponse = await fetch(`https://${workingDomain}/admin/api/2024-01/collection_listings.json`, {
         method: 'GET',
         headers: {
           'X-Shopify-Access-Token': accessToken,
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 
       collectionsResult = {
         domain: workingDomain,
-        url: `https://${workingDomain}/admin/api/2023-10/collections.json`,
+        url: `https://${workingDomain}/admin/api/2024-01/collection_listings.json`,
         status: collectionsResponse.status,
         statusText: collectionsResponse.statusText,
         success: collectionsResponse.ok
@@ -185,8 +185,8 @@ export async function POST(request: NextRequest) {
       if (collectionsResponse.ok) {
         try {
           const data = await collectionsResponse.json()
-          collectionsResult.collectionsCount = data.collections?.length || 0
-          collectionsResult.collections = data.collections?.slice(0, 3) // First 3 collections for preview
+          collectionsResult.collectionsCount = data.collection_listings?.length || 0
+          collectionsResult.collections = data.collection_listings?.slice(0, 3) // First 3 collections for preview
         } catch (e) {
           collectionsResult.error = 'Failed to parse collections data'
         }

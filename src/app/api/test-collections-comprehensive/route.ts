@@ -98,9 +98,9 @@ export async function POST(request: NextRequest) {
     const endpoints = [
       'https://api.shopify.com/2024-01/admin/shop.json',
       `https://${shopifyDomain}/admin/api/2024-01/shop.json`,
-      `https://${shopifyDomain}/admin/api/2024-01/collections.json`,
-      `https://${shopifyDomain}/admin/api/2023-10/collections.json`,
-      `https://${shopifyDomain}/admin/api/2023-07/collections.json`,
+      `https://${shopifyDomain}/admin/api/2024-01/collection_listings.json`,
+      `https://${shopifyDomain}/admin/api/2023-10/collection_listings.json`,
+      `https://${shopifyDomain}/admin/api/2023-07/collection_listings.json`,
     ]
 
     for (const url of endpoints) {
