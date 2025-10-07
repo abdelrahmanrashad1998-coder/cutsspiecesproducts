@@ -290,24 +290,33 @@ export async function POST(
 
     // Clean up the product data for Shopify API
     const cleanedProductData = {
-      ...productData,
+      title: productData.title,
+      body_html: productData.body_html,
+      vendor: productData.vendor || 'Default Vendor',
+      tags: productData.tags || '',
+      product_type: productData.product_type || '',
       variants: productData.variants?.map((variant: any) => {
-        const cleanedVariant = { ...variant }
-        // Remove null values that Shopify doesn't accept
-        if (cleanedVariant.inventory_management === null) {
-          delete cleanedVariant.inventory_management
+        const cleanedVariant: any = {
+          price: variant.price
         }
-        if (cleanedVariant.option1 === null || cleanedVariant.option1 === '') {
-          delete cleanedVariant.option1
+        // Only add fields that have values
+        if (variant.option1 && variant.option1.trim()) {
+          cleanedVariant.option1 = variant.option1
         }
-        if (cleanedVariant.option2 === null || cleanedVariant.option2 === '') {
-          delete cleanedVariant.option2
+        if (variant.option2 && variant.option2.trim()) {
+          cleanedVariant.option2 = variant.option2
         }
-        if (cleanedVariant.option3 === null || cleanedVariant.option3 === '') {
-          delete cleanedVariant.option3
+        if (variant.option3 && variant.option3.trim()) {
+          cleanedVariant.option3 = variant.option3
+        }
+        if (variant.inventory_management && variant.inventory_management !== null) {
+          cleanedVariant.inventory_management = variant.inventory_management
         }
         return cleanedVariant
-      }) || []
+      }) || [{
+        price: '0.00'
+      }],
+      images: productData.images || []
     }
 
     // Prepare the product data for Shopify API
@@ -316,6 +325,7 @@ export async function POST(
     }
 
     console.log('Creating product in Shopify:', productData.title)
+    console.log('Sending to Shopify:', JSON.stringify(shopifyProductData, null, 2))
 
     // Create product in Shopify
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products.json`
@@ -334,42 +344,21 @@ export async function POST(
       const errorData = await shopifyResponse.text()
       console.error('Shopify error:', shopifyResponse.status, errorData)
       
-      let errorMessage = 'Failed to create product in Shopify'
-      let errorDetails = errorData
-      
-      // Handle specific Shopify error codes
-      if (shopifyResponse.status === 422) {
-        errorMessage = 'Product validation failed'
-        try {
-          const parsedError = JSON.parse(errorData)
-          errorDetails = JSON.stringify({
-            message: 'Shopify validation error',
-            errors: parsedError.errors || parsedError,
-            requestData: shopifyProductData
-          })
-        } catch (e) {
-          errorDetails = JSON.stringify({
-            message: 'Shopify validation error',
-            rawError: errorData,
-            requestData: shopifyProductData
-          })
-        }
-      }
-      
       const errorResponse = NextResponse.json(
-        { error: errorMessage, details: errorDetails },
+        { error: 'Failed to create product in Shopify', details: errorData },
         { status: shopifyResponse.status }
       )
       return addCorsHeaders(errorResponse)
     }
 
     const shopifyProduct = await shopifyResponse.json()
+    console.log('Shopify response:', JSON.stringify(shopifyProduct, null, 2))
     
     // Check if product was actually created
     if (!shopifyProduct.product || !shopifyProduct.product.id) {
       console.error('Shopify returned success but no product was created:', shopifyProduct)
       const errorResponse = NextResponse.json(
-        { error: 'Product creation failed - no product ID returned from Shopify' },
+        { error: 'Product creation failed - no product ID returned from Shopify', details: shopifyProduct },
         { status: 500 }
       )
       return addCorsHeaders(errorResponse)
