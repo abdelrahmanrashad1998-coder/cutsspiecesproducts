@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/firebase-admin'
 import { db } from '@/lib/firebase-admin'
 
+// CORS headers helper
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return response
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }))
+}
+
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -31,31 +44,34 @@ export async function GET(
     // Verify the shop belongs to the user
     
     if (!db) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
         { status: 500 }
       )
+      return addCorsHeaders(response)
     }
     
     const shopDoc = await db.collection('shops').doc(shopId).get()
     
     if (!shopDoc.exists) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Shop not found', message: `No shop found with ID: ${shopId}` },
         { status: 404 }
       )
+      return addCorsHeaders(response)
     }
 
     const shopData = shopDoc.data()
     
     if (shopData?.userId !== userId) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           error: 'Unauthorized access to shop', 
           message: 'You do not have permission to access this shop'
         },
         { status: 403 }
       )
+      return addCorsHeaders(response)
     }
 
     // Fetch collections from Shopify using the shop's credentials
@@ -64,10 +80,11 @@ export async function GET(
 
 
     if (!shopifyDomain || !accessToken) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Shop credentials not found', details: { shopifyDomain, hasAccessToken: !!accessToken } },
         { status: 400 }
       )
+      return addCorsHeaders(response)
     }
 
     // Convert custom domain to myshopify domain if needed
@@ -84,7 +101,7 @@ export async function GET(
 
     // Validate access token format (should be a long string)
     if (accessToken.length < 20) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           error: 'Invalid access token format',
           details: { 
@@ -98,6 +115,7 @@ export async function GET(
         },
         { status: 400 }
       )
+      return addCorsHeaders(response)
     }
 
     const shopInfoUrl = `https://${shopifyDomain}/admin/api/2024-01/shop.json`
@@ -147,7 +165,7 @@ export async function GET(
     }
     
     try {
-      const response = await fetch(graphqlUrl, {
+      const graphqlResponse = await fetch(graphqlUrl, {
         method: 'POST',
         headers: {
           'X-Shopify-Access-Token': accessToken,
@@ -158,32 +176,32 @@ export async function GET(
       })
       
       
-      if (!response.ok) {
-        const errorText = await response.text()
+      if (!graphqlResponse.ok) {
+        const errorText = await graphqlResponse.text()
         
         let errorMessage = 'Failed to fetch collections via GraphQL'
         let suggestions = []
         
-        if (response.status === 401) {
+        if (graphqlResponse.status === 401) {
           errorMessage = 'Authentication failed - Invalid access token'
           suggestions.push('Check if your Shopify access token is correct and has not expired')
           suggestions.push('Verify the token has read permissions for collections')
-        } else if (response.status === 403) {
+        } else if (graphqlResponse.status === 403) {
           errorMessage = 'Access forbidden - Insufficient permissions'
           suggestions.push('Ensure your access token has permission to read collections')
           suggestions.push('Check if your app has the required scopes enabled (read_products)')
-        } else if (response.status === 404) {
+        } else if (graphqlResponse.status === 404) {
           errorMessage = 'GraphQL endpoint not found'
           suggestions.push('Verify your shop domain is correct (should be your-shop.myshopify.com)')
           suggestions.push('Check if your shop is still active')
         }
         
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { 
             error: errorMessage,
             details: {
-              status: response.status,
-              statusText: response.statusText,
+              status: graphqlResponse.status,
+              statusText: graphqlResponse.statusText,
               error: errorText,
               shopDomain: shopifyDomain,
               hasAccessToken: !!accessToken,
@@ -194,9 +212,10 @@ export async function GET(
           },
           { status: 502 }
         )
+        return addCorsHeaders(errorResponse)
       }
       
-      const data = await response.json()
+      const data = await graphqlResponse.json()
       
       // Transform GraphQL response to match expected frontend format
       const collections = data.data?.collections?.edges?.map((edge: any) => ({
@@ -221,7 +240,7 @@ export async function GET(
       })) || []
       
 
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         collections,
         shop: {
           id: shopId,
@@ -229,10 +248,11 @@ export async function GET(
           domain: shopData.shopifyDomain
         }
       })
+      return addCorsHeaders(response)
       
     } catch (graphqlError: any) {
       
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           error: 'GraphQL request failed',
           message: 'Failed to fetch collections via GraphQL',
@@ -242,20 +262,22 @@ export async function GET(
         },
         { status: 502 }
       )
+      return addCorsHeaders(response)
     }
 
   } catch (error: any) {
     
     if (error.message === 'No authorization token provided') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Authentication required', message: 'No authorization token provided' },
         { status: 401 }
       )
+      return addCorsHeaders(response)
     }
     
     // Handle Firebase/Firestore errors
     if (error.code === 'permission-denied') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           error: 'Firestore permission denied', 
           message: 'Firestore security rules not deployed. Please deploy security rules in Firebase Console.',
@@ -263,11 +285,12 @@ export async function GET(
         },
         { status: 403 }
       )
+      return addCorsHeaders(response)
     }
     
     // Handle network/API errors
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           error: 'Network error', 
           message: 'Unable to connect to Shopify API',
@@ -275,9 +298,10 @@ export async function GET(
         },
         { status: 502 }
       )
+      return addCorsHeaders(response)
     }
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         error: 'Internal server error', 
         message: 'An unexpected error occurred while fetching collections',
@@ -285,5 +309,6 @@ export async function GET(
       },
       { status: 500 }
     )
+    return addCorsHeaders(response)
   }
 }

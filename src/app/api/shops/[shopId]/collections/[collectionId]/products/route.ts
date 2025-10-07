@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, db } from '@/lib/firebase-admin'
 
+// CORS headers helper
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return response
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }))
+}
+
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -44,19 +57,21 @@ export async function POST(
     const shopDoc = await db.collection('shops').doc(shopId).get()
     
     if (!shopDoc.exists) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Shop not found' },
         { status: 404 }
       )
+      return addCorsHeaders(response)
     }
 
     const shopData = shopDoc.data()
     
     if (shopData?.userId !== userId) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Unauthorized access to shop' },
         { status: 403 }
       )
+      return addCorsHeaders(response)
     }
 
     // Get shop credentials
@@ -64,10 +79,11 @@ export async function POST(
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Shop credentials not found' },
         { status: 400 }
       )
+      return addCorsHeaders(response)
     }
 
     // Add product to collection using Shopify API
@@ -88,31 +104,34 @@ export async function POST(
       const errorData = await response.text()
       console.error('Shopify API error:', errorData)
       
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Failed to add product to collection', details: errorData },
         { status: response.status }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     const data = await response.json()
     
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true,
       message: 'Product added to collection successfully',
       data
     })
+    return addCorsHeaders(response)
 
   } catch (error: any) {
     console.error('Error adding product to collection:', error)
     
     if (error.message === 'No authorization token provided') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
+      return addCorsHeaders(response)
     }
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         error: 'Internal server error',
         message: 'An unexpected error occurred while adding product to collection',
@@ -120,5 +139,6 @@ export async function POST(
       },
       { status: 500 }
     )
+    return addCorsHeaders(response)
   }
 }

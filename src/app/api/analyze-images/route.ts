@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { analyzeProductImages } from '@/lib/openai'
 import { db, auth } from '@/lib/firebase-admin'
 
+// CORS headers helper
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return response
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }))
+}
+
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,10 +29,11 @@ export async function POST(request: NextRequest) {
     const { imageUrls, model: modelFromRequest, shopId } = await request.json()
     
     if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'No image URLs provided' },
         { status: 400 }
       )
+      return addCorsHeaders(response)
     }
 
     // Resolve user identity (uid) if possible
@@ -68,10 +82,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!openaiApiKey) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'OpenAI API key not configured. Please set your API key in Settings or environment variables.' },
         { status: 400 }
       )
+      return addCorsHeaders(response)
     }
 
     const modelToUse = modelFromRequest || openaiModel || 'gpt-4o'
@@ -175,22 +190,27 @@ export async function POST(request: NextRequest) {
     
     console.log('Analysis result:', analysis)
     
-    return NextResponse.json({ success: true, analysis })
+    const response = NextResponse.json({ success: true, analysis })
+    return addCorsHeaders(response)
 
   } catch (error) {
     console.error('Error analyzing images:', error)
     if (error instanceof Error) {
       if (error.message.includes('No valid authorization token')) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+        const response = NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+        return addCorsHeaders(response)
       }
       if (error.message.includes('Firebase')) {
-        return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
+        const response = NextResponse.json({ error: 'Database connection error' }, { status: 500 })
+        return addCorsHeaders(response)
       }
       if (error.message.includes('OpenAI')) {
-        return NextResponse.json({ error: 'AI analysis service error' }, { status: 500 })
+        const response = NextResponse.json({ error: 'AI analysis service error' }, { status: 500 })
+        return addCorsHeaders(response)
       }
     }
-    return NextResponse.json({ error: 'Failed to analyze images' }, { status: 500 })
+    const response = NextResponse.json({ error: 'Failed to analyze images' }, { status: 500 })
+    return addCorsHeaders(response)
   }
 }
 

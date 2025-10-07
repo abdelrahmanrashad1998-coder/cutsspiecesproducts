@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// CORS headers helper
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return response
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }))
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Upload request received')
@@ -10,10 +23,11 @@ export async function POST(request: NextRequest) {
     
     if (!imageFile) {
       console.log('No image file provided')
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'No image file provided' },
         { status: 400 }
       )
+      return addCorsHeaders(response)
     }
 
     // Upload to ImgBB - send file directly as binary
@@ -38,10 +52,11 @@ export async function POST(request: NextRequest) {
       console.error('ImgBB upload failed:', imgbbResponse.status, imgbbResponse.statusText)
       const errorText = await imgbbResponse.text()
       console.error('ImgBB error response:', errorText)
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: `Failed to upload to ImgBB: ${imgbbResponse.status} ${imgbbResponse.statusText}` },
         { status: 500 }
       )
+      return addCorsHeaders(response)
     }
     
     const imgbbData = await imgbbResponse.json()
@@ -49,26 +64,29 @@ export async function POST(request: NextRequest) {
     
     if (!imgbbData.success) {
       console.error('ImgBB upload failed:', imgbbData.error)
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: `ImgBB upload failed: ${imgbbData.error?.message || 'Unknown error'}` },
         { status: 500 }
       )
+      return addCorsHeaders(response)
     }
     
     const publicUrl = imgbbData.data.url
     console.log('Upload successful:', publicUrl)
     
-    return NextResponse.json({
-      success: true,
-      url: publicUrl,
-      message: 'Image uploaded successfully to ImgBB'
-    })
+      const response = NextResponse.json({
+        success: true,
+        url: publicUrl,
+        message: 'Image uploaded successfully to ImgBB'
+      })
+      return addCorsHeaders(response)
     
   } catch (error) {
     console.error('Error uploading image:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: `Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     )
+    return addCorsHeaders(response)
   }
 }

@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createProduct } from '@/lib/shopify'
 import { createProductAdmin } from '@/lib/firestore-admin'
 
+// CORS headers helper
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return response
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }))
+}
+
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,7 +27,8 @@ export async function GET(request: NextRequest) {
   try {
     const token = await verifyAuthToken(request)
     // TODO: Implement product fetching logic
-    return NextResponse.json({ products: [] })
+    const response = NextResponse.json({ products: [] })
+    return addCorsHeaders(response)
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(
@@ -67,10 +81,11 @@ export async function POST(request: NextRequest) {
     // Provide more specific error messages
     if (error instanceof Error) {
       if (error.message.includes('No valid authorization token')) {
-        return NextResponse.json(
-          { error: 'Authentication required' },
-          { status: 401 }
-        )
+    const response = NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+    return addCorsHeaders(response)
       }
       if (error.message.includes('Shopify')) {
         return NextResponse.json(

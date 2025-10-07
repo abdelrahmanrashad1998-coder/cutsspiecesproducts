@@ -4,6 +4,19 @@ import { db } from '@/lib/firebase-admin'
 import { testShopifyConnection } from '@/lib/shopify-test'
 import { createProductAdmin } from '@/lib/firestore-admin'
 
+// CORS headers helper
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  return response
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return addCorsHeaders(new NextResponse(null, { status: 200 }))
+}
+
 async function verifyAuthToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -30,27 +43,30 @@ export async function GET(
 
     // Check if database is initialized
     if (!db) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
         { status: 500 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     // Verify the shop belongs to the user
     const shopDoc = await db.collection('shops').doc(shopId).get()
     if (!shopDoc.exists) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Shop not found' },
         { status: 404 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     const shopData = shopDoc.data()
     if (shopData?.userId !== userId) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Unauthorized access to shop' },
         { status: 403 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     // Fetch products from Shopify using the shop's credentials
@@ -58,30 +74,31 @@ export async function GET(
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Shop credentials not found' },
         { status: 400 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     // Make request to Shopify API
-    const response = await fetch(`https://${shopifyDomain}/admin/api/2024-01/products.json`, {
+    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2024-01/products.json`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
       },
     })
 
-    if (!response.ok) {
-      const errorData = await response.text()
+    if (!shopifyResponse.ok) {
+      const errorData = await shopifyResponse.text()
       console.error('Shopify API error:', errorData)
       return NextResponse.json(
         { error: 'Failed to fetch products from Shopify', details: errorData },
-        { status: response.status }
+        { status: shopifyResponse.status }
       )
     }
 
-    const data = await response.json()
+    const data = await shopifyResponse.json()
     let products = data.products || []
 
     // Try to get collections data using a simple GraphQL query
@@ -172,7 +189,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       products,
       shop: {
         id: shopId,
@@ -181,15 +198,17 @@ export async function GET(
         currency: currency || 'USD'
       }
     })
+    return addCorsHeaders(response)
 
   } catch (error: any) {
     console.error('Error fetching shop products:', error)
     
     if (error.message === 'No authorization token provided') {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
+      return addCorsHeaders(errorResponse)
     }
     
     // Handle Firebase initialization errors
@@ -204,10 +223,11 @@ export async function GET(
       )
     }
     
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      const errorResponse = NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+      return addCorsHeaders(errorResponse)
   }
 }
 
@@ -223,10 +243,11 @@ export async function POST(
 
     // Check if database is initialized
     if (!db) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
         { status: 500 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     // Validate required fields
@@ -240,18 +261,20 @@ export async function POST(
     // Verify the shop belongs to the user
     const shopDoc = await db.collection('shops').doc(shopId).get()
     if (!shopDoc.exists) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Shop not found' },
         { status: 404 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     const shopData = shopDoc.data()
     if (shopData?.userId !== userId) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Unauthorized access to shop' },
         { status: 403 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     // Get shop credentials
@@ -259,10 +282,11 @@ export async function POST(
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Shop credentials not found' },
         { status: 400 }
       )
+      return addCorsHeaders(errorResponse)
     }
 
     // Create product in Shopify using shop-specific credentials
@@ -302,7 +326,7 @@ export async function POST(
       isActive: true
     })
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true,
       product: {
         id: shopifyProduct.product.id,
@@ -310,6 +334,7 @@ export async function POST(
         firestoreId: firestoreProduct.id
       }
     })
+    return addCorsHeaders(response)
   } catch (error) {
     console.error('Error creating product:', error)
     
@@ -348,9 +373,10 @@ export async function POST(
       }
     }
     
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to create product' },
       { status: 500 }
     )
+    return addCorsHeaders(errorResponse)
   }
 }
