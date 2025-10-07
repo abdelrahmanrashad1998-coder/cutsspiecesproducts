@@ -102,7 +102,7 @@ export async function PUT(
 
     // Update product in Shopify
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products/${productId}.json`
-    const response = await fetch(shopifyUrl, {
+    const shopifyResponse = await fetch(shopifyUrl, {
       method: 'PUT',
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -111,14 +111,14 @@ export async function PUT(
       body: JSON.stringify(shopifyProductData),
     })
 
-    console.log('Shopify update response status:', response.status)
-    console.log('Shopify response headers:', Object.fromEntries(response.headers.entries()))
+    console.log('Shopify update response status:', shopifyResponse.status)
+    console.log('Shopify response headers:', Object.fromEntries(shopifyResponse.headers.entries()))
 
-    if (!response.ok) {
-      const errorData = await response.text()
+    if (!shopifyResponse.ok) {
+      const errorData = await shopifyResponse.text()
       console.error('Shopify update error details:', {
-        status: response.status,
-        statusText: response.statusText,
+        status: shopifyResponse.status,
+        statusText: shopifyResponse.statusText,
         errorData,
         url: shopifyUrl,
         requestData: shopifyProductData
@@ -148,12 +148,12 @@ export async function PUT(
       
       const errorResponse = NextResponse.json(
         { error: errorMessage, details: errorDetails },
-        { status: response.status }
+        { status: shopifyResponse.status }
       )
       return addCorsHeaders(errorResponse)
     }
 
-    const updatedProduct = await response.json()
+    const updatedProduct = await shopifyResponse.json()
     console.log('Product updated successfully:', updatedProduct)
 
     const response = NextResponse.json({ 
@@ -229,24 +229,24 @@ export async function GET(
 
     // First try the REST API to get the product, then use GraphQL for collections if needed
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products/${productId}.json`
-    const response = await fetch(shopifyUrl, {
+    const shopifyResponse = await fetch(shopifyUrl, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
       },
     })
 
-    if (!response.ok) {
-      const errorData = await response.text()
+    if (!shopifyResponse.ok) {
+      const errorData = await shopifyResponse.text()
       console.error('Shopify get product error:', errorData)
       const errorResponse = NextResponse.json(
         { error: 'Failed to fetch product from Shopify', details: errorData },
-        { status: response.status }
+        { status: shopifyResponse.status }
       )
       return addCorsHeaders(errorResponse)
     }
 
-    const productData = await response.json()
+    const productData = await shopifyResponse.json()
     const product = productData.product
 
     // Now get collections using GraphQL
