@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Upload, 
   Image as ImageIcon, 
@@ -39,6 +40,11 @@ interface Product {
     src: string
     alt: string | null
   }>
+  collections?: Array<{
+    id: number
+    title: string
+    handle: string
+  }>
 }
 
 interface ProductVariant {
@@ -49,6 +55,12 @@ interface ProductVariant {
   option2?: string
   option3?: string
   inventory_tracking: boolean
+}
+
+interface Collection {
+  id: number
+  title: string
+  handle: string
 }
 
 export default function EditProductPage() {
@@ -65,11 +77,13 @@ export default function EditProductPage() {
   const [productData, setProductData] = useState({
     title: '',
     description: '',
-    category: '',
     vendor: '',
   })
   const [variants, setVariants] = useState<ProductVariant[]>([])
   const [selectedShop, setSelectedShop] = useState<any>(null)
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [selectedCollection, setSelectedCollection] = useState<string>('none')
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -77,6 +91,41 @@ export default function EditProductPage() {
       fetchProduct()
     }
   }, [productId])
+
+  useEffect(() => {
+    if (selectedShop && firebaseUser) {
+      fetchCollections()
+    } else {
+      setCollections([])
+      setSelectedCollection('none')
+    }
+  }, [selectedShop, firebaseUser])
+
+  const fetchCollections = async () => {
+    if (!selectedShop || !firebaseUser) return
+
+    setIsLoadingCollections(true)
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCollections(data.collections || [])
+      } else {
+        console.error('Failed to fetch collections')
+      }
+    } catch (error) {
+      console.error('Error fetching collections:', error)
+    } finally {
+      setIsLoadingCollections(false)
+    }
+  }
 
   const fetchProduct = async () => {
     try {
@@ -159,7 +208,6 @@ export default function EditProductPage() {
         setProductData({
           title: foundProduct.title,
           description: foundProduct.body_html,
-          category: foundProduct.product_type,
           vendor: foundProduct.vendor,
         })
         setVariants(foundProduct.variants.map((v: any) => ({
@@ -171,6 +219,15 @@ export default function EditProductPage() {
           option3: v.option3,
           inventory_tracking: v.inventory_management === 'shopify',
         })))
+        
+        // Set the selected collection based on the product's current collections
+        if (foundProduct.collections && foundProduct.collections.length > 0) {
+          // For now, we'll select the first collection the product belongs to
+          // In a more advanced implementation, you might want to handle multiple collections
+          setSelectedCollection(foundProduct.collections[0].id.toString())
+        } else {
+          setSelectedCollection('none')
+        }
       } else {
         toast.error('Product not found in any of your shops')
         router.push('/dashboard')
@@ -277,7 +334,6 @@ export default function EditProductPage() {
         title: productData.title,
         body_html: productData.description,
         vendor: productData.vendor,
-        product_type: productData.category,
         variants: variants.map(variant => {
           const variantData: any = {
             price: variant.price,
@@ -316,7 +372,49 @@ export default function EditProductPage() {
       })
 
       if (response.ok) {
-        toast.success('Product updated successfully!')
+        // Handle collection changes
+        const currentCollectionId = product?.collections && product.collections.length > 0 
+          ? product.collections[0].id.toString() 
+          : 'none'
+        
+        // Only update collection if it has changed
+        if (selectedCollection !== currentCollectionId) {
+          try {
+            // If product was in a collection and now it's "none", we need to remove it
+            // Note: Shopify doesn't have a direct "remove from collection" API for manual collections
+            // For automatic collections, products are added/removed based on rules
+            // For manual collections, we can only add products, not remove them via API
+            
+            if (selectedCollection && selectedCollection !== "none") {
+              // Add product to the new collection
+              const collectionResponse = await fetch(`/api/shops/${selectedShop.id}/collections/${selectedCollection}/products`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${await firebaseUser.getIdToken()}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  productId: parseInt(productId)
+                }),
+              })
+
+              if (collectionResponse.ok) {
+                toast.success('Product updated and collection changed successfully!')
+              } else {
+                toast.success('Product updated successfully, but failed to update collection')
+              }
+            } else {
+              // Product was removed from collections (set to "none")
+              // Note: This requires manual removal from Shopify admin for manual collections
+              toast.success('Product updated successfully! Note: To remove from collections, please use the Shopify admin panel.')
+            }
+          } catch (collectionError) {
+            toast.success('Product updated successfully, but failed to update collection')
+          }
+        } else {
+          toast.success('Product updated successfully!')
+        }
+        
         router.push('/dashboard')
       } else {
         const errorData = await response.json()
@@ -504,13 +602,20 @@ export default function EditProductPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={productData.category}
-                  onChange={(e) => setProductData(prev => ({ ...prev, category: e.target.value }))}
-                  placeholder="Enter product category"
-                />
+                <Label htmlFor="collection">Collection (Optional)</Label>
+                <Select value={selectedCollection} onValueChange={setSelectedCollection}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder={isLoadingCollections ? "Loading collections..." : "Select a collection"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No collection</SelectItem>
+                    {collections.map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                        {collection.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

@@ -70,7 +70,78 @@ export async function GET(
     }
 
     const data = await response.json()
-    const products = data.products || []
+    let products = data.products || []
+
+    // Try to get collections data using a simple GraphQL query
+    try {
+      const graphqlUrl = `https://${shopifyDomain}/admin/api/2023-10/graphql.json`
+      const graphqlQuery = {
+        query: `
+          query getProductCollections {
+            products(first: 50) {
+              edges {
+                node {
+                  id
+                  collections(first: 10) {
+                    edges {
+                      node {
+                        id
+                        title
+                        handle
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `
+      }
+      
+      const graphqlResponse = await fetch(graphqlUrl, {
+        method: 'POST',
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(graphqlQuery)
+      })
+
+      if (graphqlResponse.ok) {
+        const graphqlData = await graphqlResponse.json()
+        
+        if (graphqlData.data?.products?.edges) {
+          // Create a map of product ID to collections
+          const productCollectionsMap: { [productId: string]: any[] } = {}
+          
+          graphqlData.data.products.edges.forEach((edge: any) => {
+            const productId = parseInt(edge.node.id.split('/').pop()) || 0
+            const collections = edge.node.collections.edges.map((cEdge: any) => ({
+              id: parseInt(cEdge.node.id.split('/').pop()) || 0,
+              title: cEdge.node.title,
+              handle: cEdge.node.handle
+            }))
+            
+            if (collections.length > 0) {
+              productCollectionsMap[productId] = collections
+            }
+          })
+
+          // Add collections data to products
+          products = products.map((product: any) => ({
+            ...product,
+            collections: productCollectionsMap[product.id] || []
+          }))
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch collections via GraphQL, continuing without collections:', error)
+      // Add empty collections array to products
+      products = products.map((product: any) => ({
+        ...product,
+        collections: []
+      }))
+    }
 
     // Determine currency - if not stored, fetch from Shopify
     let currency = shopData.currency
