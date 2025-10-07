@@ -99,7 +99,7 @@ export async function GET(
     }
 
     // Make request to Shopify API
-    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2024-01/products.json`, {
+    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2025-01/products.json`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export async function GET(
 
     // Use GraphQL to get products with collections data
     try {
-      const graphqlUrl = `https://${shopifyDomain}/admin/api/2024-10/graphql.json`
+      const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
       const graphqlQuery = {
         query: `
           query getProducts($first: Int!) {
@@ -422,13 +422,13 @@ export async function POST(
 
     // Create product in Shopify using GraphQL API
     console.log('Step 11: Setting up GraphQL API...')
-    const graphqlUrl = `https://${shopifyDomain}/admin/api/2024-10/graphql.json`
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
     console.log('GraphQL URL:', graphqlUrl)
     
     // Build optimized GraphQL mutation
     const graphqlMutation = `
-      mutation productCreate($product: ProductCreateInput!) {
-        productCreate(product: $product) {
+      mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id
             title
@@ -438,11 +438,14 @@ export async function POST(
             vendor
             productType
             tags
-            images(first: 10) {
+            media(first: 10) {
               nodes {
                 id
-                url
-                altText
+                alt
+                mediaContentType
+                preview {
+                  status
+                }
               }
             }
             variants(first: 10) {
@@ -474,10 +477,6 @@ export async function POST(
         vendor: cleanedProductData.vendor,
         tags: cleanedProductData.tags ? cleanedProductData.tags.split(',').map((tag: string) => tag.trim()) : [],
         productType: cleanedProductData.product_type || '',
-        images: cleanedProductData.images?.map((img: any) => ({
-          originalSource: img.src,
-          alt: img.alt || cleanedProductData.title
-        })) || [],
         variants: cleanedProductData.variants?.map((variant: any) => ({
           price: variant.price || '0.00',
           sku: variant.sku || '',
@@ -494,8 +493,29 @@ export async function POST(
       }
     }
 
+    // Handle media separately if images exist
+    let mediaVariables = null
+    if (cleanedProductData.images && cleanedProductData.images.length > 0) {
+      mediaVariables = {
+        media: cleanedProductData.images.map((img: any) => ({
+          originalSource: img.src,
+          alt: img.alt || cleanedProductData.title,
+          mediaContentType: 'IMAGE'
+        }))
+      }
+    }
+
     console.log('Creating product in Shopify:', productData.title)
     console.log('GraphQL variables:', JSON.stringify(graphqlVariables, null, 2))
+    if (mediaVariables) {
+      console.log('Media variables:', JSON.stringify(mediaVariables, null, 2))
+    }
+    
+    // Combine variables for the request
+    const requestVariables: any = { ...graphqlVariables }
+    if (mediaVariables) {
+      requestVariables.media = mediaVariables.media
+    }
     
     const shopifyResponse = await fetch(graphqlUrl, {
       method: 'POST',
@@ -505,7 +525,7 @@ export async function POST(
       },
       body: JSON.stringify({
         query: graphqlMutation,
-        variables: graphqlVariables
+        variables: requestVariables
       }),
     })
     
@@ -585,11 +605,11 @@ export async function POST(
       product_type: shopifyProduct.productType,
       tags: shopifyProduct.tags.join(', '),
       status: shopifyProduct.status.toLowerCase(),
-      images: shopifyProduct.images.nodes.map((img: any) => ({
-        id: parseInt(img.id.split('/').pop()) || 0,
-        src: img.url,
-        alt: img.altText
-      })),
+      images: shopifyProduct.media?.nodes?.map((media: any) => ({
+        id: parseInt(media.id.split('/').pop()) || 0,
+        src: media.originalSource || '', // Note: This might need to be fetched separately for the actual URL
+        alt: media.alt || ''
+      })) || [],
       variants: shopifyProduct.variants.nodes.map((variant: any) => ({
         id: parseInt(variant.id.split('/').pop()) || 0,
         title: variant.title,
