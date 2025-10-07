@@ -331,10 +331,25 @@ export async function POST(
 
     // Validate required fields
     console.log('Step 4: Validating required fields...')
+    console.log('Product data received:', {
+      title: productData.title,
+      hasBodyHtml: !!productData.body_html,
+      vendor: productData.vendor,
+      tags: productData.tags,
+      variantsCount: productData.variants?.length || 0,
+      imagesCount: productData.images?.length || 0
+    })
+    
     if (!productData.title || !productData.body_html) {
       console.log('Validation failed: missing title or body_html')
       const response = NextResponse.json(
-        { error: 'Title and description are required' },
+        { 
+          error: 'Title and description are required',
+          received: {
+            title: productData.title,
+            body_html: productData.body_html ? 'present' : 'missing'
+          }
+        },
         { status: 400 }
       )
       return addCorsHeaders(response)
@@ -343,10 +358,17 @@ export async function POST(
     // Verify the shop belongs to the user
     console.log('Step 5: Checking database connection...')
     if (!db) {
-      console.log('Database not initialized')
+      console.log('Database not initialized - returning 400 for better debugging')
       const response = NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
+        { 
+          error: 'Database not initialized',
+          message: 'Firebase Admin SDK database connection is not available',
+          debug: {
+            auth: auth ? 'initialized' : 'not initialized',
+            db: db ? 'initialized' : 'not initialized'
+          }
+        },
+        { status: 400 }
       )
       return addCorsHeaders(response)
     }
@@ -672,15 +694,34 @@ export async function POST(
       return addCorsHeaders(response)
     }
     
-    console.log('Returning 500 error response')
+    // Handle Firebase initialization errors with 400 status for better debugging
+    if (error.message === 'Firebase Admin SDK not initialized') {
+      console.log('Firebase initialization error - returning 400')
+      const response = NextResponse.json(
+        { 
+          error: 'Firebase not configured',
+          message: 'Firebase Admin SDK is not properly initialized. Please check your environment variables.',
+          details: 'Check FIREBASE_ADMIN_PRIVATE_KEY and other Firebase configuration variables.'
+        },
+        { status: 400 }
+      )
+      return addCorsHeaders(response)
+    }
+    
+    // For other errors, return 400 to help with debugging
+    console.log('Returning 400 error response for better debugging')
     const response = NextResponse.json(
       { 
-        error: 'Internal server error',
-        message: 'An unexpected error occurred while creating the product',
+        error: 'Product creation failed',
+        message: 'An error occurred while creating the product',
         details: error.message,
-        stack: error.stack
+        type: typeof error,
+        debug: {
+          firebaseAuth: auth ? 'initialized' : 'not initialized',
+          firebaseDb: db ? 'initialized' : 'not initialized'
+        }
       },
-      { status: 500 }
+      { status: 400 }
     )
     return addCorsHeaders(response)
   }
