@@ -6,6 +6,8 @@ import { useAuth } from './AuthContext'
 export interface UserSettings {
   openaiApiKey?: string
   openaiModel?: string
+  defaultVendor?: 'store_name' | 'custom' | 'none'
+  customVendor?: string
   updatedAt: Date
 }
 
@@ -22,6 +24,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>({
     openaiApiKey: '',
     openaiModel: 'gpt-4o',
+    defaultVendor: 'store_name',
+    customVendor: '',
     updatedAt: new Date()
   })
   const [loading, setLoading] = useState(true)

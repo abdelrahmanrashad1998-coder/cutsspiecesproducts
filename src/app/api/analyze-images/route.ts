@@ -76,15 +76,72 @@ export async function POST(request: NextRequest) {
 
     const modelToUse = modelFromRequest || openaiModel || 'gpt-4o'
 
-    // Fetch store description if shopId is provided
+    // Fetch store description, currency, and collections if shopId is provided
     let storeDescription = ''
+    let storeCurrency = 'USD'
+    let availableCollections: any[] = []
     if (shopId && db) {
       try {
         const shopDoc = await db.collection('shops').doc(shopId).get()
         if (shopDoc.exists) {
           const shopData = shopDoc.data()
           storeDescription = shopData?.storeDescription || ''
+          storeCurrency = shopData?.currency || 'USD'
           console.log('Fetched store description:', storeDescription)
+          console.log('Fetched store currency:', storeCurrency)
+          
+          // Fetch collections for this shop
+          if (shopData?.shopifyDomain && shopData?.shopifyAccessToken) {
+            try {
+              // Make direct API call to Shopify instead of internal API to avoid circular dependency
+              const shopifyDomain = shopData.shopifyDomain
+              const accessToken = shopData.shopifyAccessToken
+              
+              // Convert custom domain to myshopify domain if needed
+              let domainToUse = shopifyDomain
+              if (shopifyDomain === 'cutts-pieces.com') {
+                domainToUse = 'v4b0fh-da.myshopify.com'
+              }
+              
+              const graphqlUrl = `https://${domainToUse}/admin/api/2023-10/graphql.json`
+              const graphqlQuery = {
+                query: `
+                  query {
+                    collections(first: 50) {
+                      edges {
+                        node {
+                          id
+                          title
+                          handle
+                        }
+                      }
+                    }
+                  }
+                `
+              }
+              
+              const collectionsResponse = await fetch(graphqlUrl, {
+                method: 'POST',
+                headers: {
+                  'X-Shopify-Access-Token': accessToken,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(graphqlQuery)
+              })
+              
+              if (collectionsResponse.ok) {
+                const collectionsData = await collectionsResponse.json()
+                availableCollections = collectionsData.data?.collections?.edges?.map((edge: any) => ({
+                  id: parseInt(edge.node.id.split('/').pop()) || 0,
+                  title: edge.node.title,
+                  handle: edge.node.handle
+                })) || []
+                console.log('Fetched collections:', availableCollections.length)
+              }
+            } catch (collectionsError) {
+              console.warn('Failed to fetch collections:', collectionsError)
+            }
+          }
         } else {
           console.log('Shop not found for shopId:', shopId)
         }
@@ -109,10 +166,12 @@ export async function POST(request: NextRequest) {
       imageUrls: fullImageUrls,
       modelToUse,
       hasStoreDescription: !!storeDescription,
-      storeDescription: storeDescription.substring(0, 100) + (storeDescription.length > 100 ? '...' : '')
+      storeDescription: storeDescription.substring(0, 100) + (storeDescription.length > 100 ? '...' : ''),
+      storeCurrency,
+      collectionsCount: availableCollections.length
     })
 
-    const analysis = await analyzeProductImages(fullImageUrls, openaiApiKey, modelToUse, storeDescription)
+    const analysis = await analyzeProductImages(fullImageUrls, openaiApiKey, modelToUse, storeDescription, availableCollections, storeCurrency)
     
     console.log('Analysis result:', analysis)
     

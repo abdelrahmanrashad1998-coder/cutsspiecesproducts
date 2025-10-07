@@ -22,7 +22,9 @@ import {
   Loader2,
   ExternalLink,
   Check,
-  RefreshCw
+  RefreshCw,
+  Save,
+  X
 } from 'lucide-react'
 import { DataTablePagination } from '@/components/ui/data-table-pagination'
 import { toast } from 'sonner'
@@ -68,6 +70,9 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [shopCurrency, setShopCurrency] = useState<string>('USD')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [editingProduct, setEditingProduct] = useState<number | null>(null)
+  const [editingCategory, setEditingCategory] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
@@ -166,6 +171,58 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const startEditingCategory = (product: Product) => {
+    setEditingProduct(product.id)
+    setEditingCategory(product.product_type || '')
+  }
+
+  const cancelEditing = () => {
+    setEditingProduct(null)
+    setEditingCategory('')
+  }
+
+  const saveCategory = async (product: Product) => {
+    if (!selectedShop || !firebaseUser) return
+
+    setIsUpdating(true)
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      const response = await fetch(`/api/shops/${selectedShop.id}/products/${product.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: product.title,
+          body_html: product.body_html,
+          vendor: product.vendor,
+          product_type: editingCategory,
+          variants: product.variants,
+          images: product.images
+        }),
+      })
+
+      if (response.ok) {
+        // Update the local state
+        setProducts(prev => prev.map(p => 
+          p.id === product.id ? { ...p, product_type: editingCategory } : p
+        ))
+        setEditingProduct(null)
+        setEditingCategory('')
+        toast.success('Category updated successfully!')
+      } else {
+        const errorData = await response.json()
+        toast.error(`Failed to update category: ${errorData.error}`)
+      }
+    } catch (error) {
+      toast.error('Error updating category')
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   if (!selectedShop) {
@@ -343,7 +400,53 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                           <span className="text-sm">{product.vendor || '—'}</span>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <span className="text-sm">{product.product_type || '—'}</span>
+                          {editingProduct === product.id ? (
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                value={editingCategory}
+                                onChange={(e) => setEditingCategory(e.target.value)}
+                                className="h-8 text-sm"
+                                placeholder="Enter category"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    saveCategory(product)
+                                  } else if (e.key === 'Escape') {
+                                    cancelEditing()
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => saveCategory(product)}
+                                disabled={isUpdating}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={cancelEditing}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2 group">
+                              <span className="text-sm">{product.product_type || '—'}</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditingCategory(product)}
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <span className="font-medium text-sm">

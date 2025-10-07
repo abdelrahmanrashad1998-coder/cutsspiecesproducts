@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Settings, Key, Store, Database, Save, Eye, EyeOff } from 'lucide-react'
+import { Settings, Key, Store, Database, Save, Eye, EyeOff, User } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useState, useEffect } from 'react'
@@ -16,6 +16,8 @@ export default function SettingsPage() {
   const { settings, updateSettings, loading } = useSettings()
   const [openaiKey, setOpenaiKey] = useState(settings.openaiApiKey || '')
   const [selectedModel, setSelectedModel] = useState(settings.openaiModel || 'gpt-4o')
+  const [defaultVendor, setDefaultVendor] = useState(settings.defaultVendor || 'store_name')
+  const [customVendor, setCustomVendor] = useState(settings.customVendor || '')
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -23,6 +25,8 @@ export default function SettingsPage() {
   useEffect(() => {
     setOpenaiKey(settings.openaiApiKey || '')
     setSelectedModel(settings.openaiModel || 'gpt-4o')
+    setDefaultVendor(settings.defaultVendor || 'store_name')
+    setCustomVendor(settings.customVendor || '')
   }, [settings])
 
   const handleTestConnection = async (type: 'shopify' | 'openai') => {
@@ -58,7 +62,9 @@ export default function SettingsPage() {
     try {
       await updateSettings({
         openaiApiKey: openaiKey,
-        openaiModel: selectedModel
+        openaiModel: selectedModel,
+        defaultVendor: defaultVendor,
+        customVendor: customVendor
       })
       toast.success('Settings saved successfully!')
     } catch (error) {
@@ -71,6 +77,8 @@ export default function SettingsPage() {
   const handleClearSettings = () => {
     setOpenaiKey('')
     setSelectedModel('gpt-4o')
+    setDefaultVendor('store_name')
+    setCustomVendor('')
   }
 
   return (
@@ -195,6 +203,65 @@ export default function SettingsPage() {
                 Test OpenAI Connection
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Default Vendor Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <User className="mr-2 h-5 w-5" />
+              Default Vendor Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="default-vendor">Default Vendor Behavior</Label>
+              <Select value={defaultVendor} onValueChange={setDefaultVendor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select default vendor behavior" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="store_name">Use Store Name</SelectItem>
+                  <SelectItem value="custom">Use Custom Vendor</SelectItem>
+                  <SelectItem value="none">No Default (Leave Empty)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-gray-500">
+                Choose how the vendor field should be populated by default when adding new products.
+              </p>
+            </div>
+            
+            {defaultVendor === 'custom' && (
+              <div className="space-y-2">
+                <Label htmlFor="custom-vendor">Custom Vendor Name</Label>
+                <Input
+                  id="custom-vendor"
+                  value={customVendor}
+                  onChange={(e) => setCustomVendor(e.target.value)}
+                  placeholder="Enter your custom vendor name"
+                />
+                <p className="text-sm text-gray-500">
+                  This will be used as the default vendor for all new products.
+                </p>
+              </div>
+            )}
+            
+            {defaultVendor === 'store_name' && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm text-blue-800">
+                  <strong>Store Name:</strong> The vendor field will automatically use your store's name as the default value.
+                </p>
+              </div>
+            )}
+            
+            {defaultVendor === 'none' && (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                <p className="text-sm text-gray-600">
+                  <strong>No Default:</strong> The vendor field will be left empty by default, allowing you to enter a custom value for each product.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

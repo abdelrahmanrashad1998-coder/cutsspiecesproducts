@@ -4,6 +4,8 @@ import { db, auth } from '@/lib/firebase-admin'
 export interface UserSettings {
   openaiApiKey?: string
   openaiModel?: string
+  defaultVendor?: 'store_name' | 'custom' | 'none'
+  customVendor?: string
   updatedAt: Date
 }
 
@@ -48,6 +50,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         openaiApiKey: '',
         openaiModel: 'gpt-4o',
+        defaultVendor: 'store_name',
+        customVendor: '',
         updatedAt: new Date()
       })
     }
@@ -82,11 +86,15 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { openaiApiKey, openaiModel } = body
+    const { openaiApiKey, openaiModel, defaultVendor, customVendor } = body
     
     // Validate input
     if (openaiModel && !['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'].includes(openaiModel)) {
       return NextResponse.json({ error: 'Invalid OpenAI model' }, { status: 400 })
+    }
+    
+    if (defaultVendor && !['store_name', 'custom', 'none'].includes(defaultVendor)) {
+      return NextResponse.json({ error: 'Invalid default vendor setting' }, { status: 400 })
     }
     
     // Save settings to Firestore using Admin SDK
@@ -98,6 +106,8 @@ export async function POST(request: NextRequest) {
     const settingsData: UserSettings = {
       openaiApiKey: openaiApiKey || '',
       openaiModel: openaiModel || 'gpt-4o',
+      defaultVendor: defaultVendor || 'store_name',
+      customVendor: customVendor || '',
       updatedAt: new Date()
     }
     
