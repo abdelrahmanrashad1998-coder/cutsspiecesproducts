@@ -731,6 +731,73 @@ export async function POST(
 
     console.log('Product created successfully in Shopify with ID:', productId)
     
+    // Update the initial variant's price if we have variant data
+    if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
+      const firstVariant = cleanedProductData.variants[0]
+      if (firstVariant.price && firstVariant.price !== '0.00') {
+        console.log('Updating initial variant price to:', firstVariant.price)
+        
+        try {
+          // Update the first variant's price using bulk update
+          const variantUpdateMutation = `
+            mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+              productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+                productVariants {
+                  id
+                  title
+                  price
+                  sku
+                  inventoryQuantity
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `
+
+          const variantUpdateResponse = await fetch(graphqlUrl, {
+            method: 'POST',
+            headers: {
+              'X-Shopify-Access-Token': accessToken,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: variantUpdateMutation,
+              variables: {
+                productId: shopifyProduct.id,
+                variants: [{
+                  id: shopifyProduct.variants.nodes[0].id,
+                  price: firstVariant.price,
+                  sku: firstVariant.sku || '',
+                  inventoryQuantity: firstVariant.inventory_quantity || 0
+                }]
+              }
+            }),
+          })
+
+          if (variantUpdateResponse.ok) {
+            const variantUpdateData = await variantUpdateResponse.json()
+            console.log('Variant price updated successfully:', variantUpdateData)
+            
+            // Update the final product data with the correct price
+            if (variantUpdateData.data?.productVariantsBulkUpdate?.productVariants?.[0]) {
+              finalProductData.variants[0].price = variantUpdateData.data.productVariantsBulkUpdate.productVariants[0].price
+              console.log('Updated final product data with correct price:', finalProductData.variants[0].price)
+            }
+          } else {
+            console.warn('Failed to update variant price, but product was created successfully')
+          }
+        } catch (variantUpdateError) {
+          console.warn('Error updating variant price:', variantUpdateError)
+          // Fallback: Update the final product data with the intended price
+          finalProductData.variants[0].price = firstVariant.price
+          console.log('Updated final product data with fallback price:', firstVariant.price)
+        }
+      }
+    }
+    
     // If we have multiple variants with different options, create additional variants
     if (cleanedProductData.variants && cleanedProductData.variants.length > 1) {
       console.log('Creating additional variants...')
