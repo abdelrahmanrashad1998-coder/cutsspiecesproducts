@@ -35,10 +35,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ shopId: string }> }
 ) {
+  console.log('=== PRODUCT GET ENDPOINT CALLED ===')
+  console.log('Request URL:', request.url)
+  
   try {
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
     const { shopId } = await params
+
+    console.log('GET request processed:', { shopId, userId })
 
     // Check if database is initialized
     if (!db) {
@@ -234,11 +239,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ shopId: string }> }
 ) {
+  console.log('=== PRODUCT CREATION ENDPOINT CALLED ===')
+  console.log('Request URL:', request.url)
+  console.log('Request method:', request.method)
+  
   try {
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
     const { shopId } = await params
     const productData = await request.json()
+    
+    console.log('Request processed successfully:', { shopId, userId, productTitle: productData.title })
 
     // Validate required fields
     if (!productData.title || !productData.body_html) {
