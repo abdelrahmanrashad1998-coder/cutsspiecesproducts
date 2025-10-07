@@ -341,111 +341,154 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
-                      <TableHead className="min-w-[200px]">Collection</TableHead>
-                      <TableHead className="min-w-[120px] hidden md:table-cell">Handle</TableHead>
-                      <TableHead className="w-24">Status</TableHead>
-                      <TableHead className="w-32 hidden lg:table-cell">Sort Order</TableHead>
-                      <TableHead className="w-24 hidden lg:table-cell">Rules</TableHead>
-                      <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
-                      <TableHead className="w-24">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedCollections.map((collection) => (
-                      <TableRow key={collection.id} className="group">
-                        <TableCell className="hidden sm:table-cell">
-                          <div className="relative">
-                            {collection.image ? (
-                              <img
-                                src={collection.image.src}
-                                alt={collection.image.alt || collection.title}
-                                className="h-12 w-12 object-cover rounded-lg border"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center border">
-                                <FolderOpen className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <div className="sm:hidden">
-                                {collection.image ? (
-                                  <img
-                                    src={collection.image.src}
-                                    alt={collection.image.alt || collection.title}
-                                    className="h-8 w-8 object-cover rounded border"
-                                  />
-                                ) : (
-                                  <div className="h-8 w-8 bg-muted rounded flex items-center justify-center border">
-                                    <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="font-medium text-sm leading-tight truncate">{collection.title}</div>
-                                <div className="md:hidden text-xs text-muted-foreground font-mono">
-                                  #{collection.handle}
-                                </div>
-                                {collection.body_html && (
-                                  <div className="text-xs text-muted-foreground line-clamp-1" 
-                                       dangerouslySetInnerHTML={{ __html: collection.body_html }} />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {collection.handle}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={getPublishedStatus(collection) === 'Published' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {getPublishedStatus(collection)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <Badge variant="outline" className="text-xs">
-                            {collection.sort_order}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <span className="text-sm text-muted-foreground">
-                            {collection.rules.length} rule{collection.rules.length !== 1 ? 's' : ''}
-                          </span>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(collection.created_at)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(`https://${selectedShop.shopifyDomain}/collections/${collection.handle}`, '_blank')}
-                              title="View collection on store"
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                {/* Desktop Table */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Image</TableHead>
+                        <TableHead className="min-w-[200px]">Collection</TableHead>
+                        <TableHead className="min-w-[120px]">Handle</TableHead>
+                        <TableHead className="w-24">Status</TableHead>
+                        <TableHead className="w-32">Sort Order</TableHead>
+                        <TableHead className="w-24">Rules</TableHead>
+                        <TableHead className="w-32">Created</TableHead>
+                        <TableHead className="w-24">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedCollections.map((collection) => (
+                        <TableRow key={collection.id} className="group">
+                          <TableCell>
+                            <div className="relative">
+                              {collection.image ? (
+                                <img
+                                  src={collection.image.src}
+                                  alt={collection.image.alt || collection.title}
+                                  className="h-12 w-12 object-cover rounded-lg border"
+                                />
+                              ) : (
+                                <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center border">
+                                  <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm leading-tight">{collection.title}</div>
+                              {collection.body_html && (
+                                <div className="text-xs text-muted-foreground line-clamp-1" 
+                                     dangerouslySetInnerHTML={{ __html: collection.body_html }} />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                              {collection.handle}
+                            </code>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={getPublishedStatus(collection) === 'Published' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {getPublishedStatus(collection)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {collection.sort_order}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {collection.rules.length} rule{collection.rules.length !== 1 ? 's' : ''}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {formatDate(collection.created_at)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(`https://${selectedShop.shopifyDomain}/collections/${collection.handle}`, '_blank')}
+                                title="View collection on store"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card Layout */}
+                <div className="lg:hidden space-y-3">
+                  {paginatedCollections.map((collection) => (
+                    <div key={collection.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          {collection.image ? (
+                            <img
+                              src={collection.image.src}
+                              alt={collection.image.alt || collection.title}
+                              className="h-16 w-16 object-cover rounded-lg border"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center border">
+                              <FolderOpen className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm leading-tight mb-1">{collection.title}</h3>
+                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono mb-2 block w-fit">
+                            #{collection.handle}
+                          </code>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Badge 
+                              variant={getPublishedStatus(collection) === 'Published' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {getPublishedStatus(collection)}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {collection.sort_order}
+                            </Badge>
+                          </div>
+                          {collection.body_html && (
+                            <div className="text-xs text-muted-foreground line-clamp-2 mb-2" 
+                                 dangerouslySetInnerHTML={{ __html: collection.body_html }} />
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {collection.rules.length} rule{collection.rules.length !== 1 ? 's' : ''} • Created: {formatDate(collection.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-2 pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`https://${selectedShop.shopifyDomain}/collections/${collection.handle}`, '_blank')}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 
                 {/* Pagination */}
                 <div className="mt-4">

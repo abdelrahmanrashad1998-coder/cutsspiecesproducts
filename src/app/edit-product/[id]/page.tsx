@@ -466,10 +466,10 @@ export default function EditProductPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-4 lg:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
-          <p className="text-gray-600">Update product details and images</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Edit Product</h1>
+          <p className="text-sm lg:text-base text-gray-600">Update product details and images</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -480,7 +480,7 @@ export default function EditProductPage() {
             </CardHeader>
             <CardContent>
               {product.images.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 lg:gap-4">
                   {product.images.map((image) => (
                     <div key={image.id} className="relative">
                       <img
@@ -537,7 +537,7 @@ export default function EditProductPage() {
               </div>
 
               {newImageUrls.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 lg:gap-4">
                   {newImageUrls.map((url, index) => (
                     <div key={index} className="relative">
                       <img
@@ -567,7 +567,7 @@ export default function EditProductPage() {
               <CardTitle>Product Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Product Title *</Label>
                   <Input
@@ -648,7 +648,7 @@ export default function EditProductPage() {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Size</Label>
                       <Input
@@ -694,15 +694,16 @@ export default function EditProductPage() {
           </Card>
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push('/dashboard')}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

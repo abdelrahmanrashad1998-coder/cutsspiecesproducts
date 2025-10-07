@@ -417,14 +417,14 @@ export default function AddProductPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-4 lg:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Product</h1>
-          <p className="text-gray-600">Upload images and create a new product</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Add New Product</h1>
+          <p className="text-sm lg:text-base text-gray-600">Upload images and create a new product</p>
         </div>
 
         {/* Shop Selection */}
-        <div className="bg-white p-6 rounded-lg border">
+        <div className="bg-white p-4 lg:p-6 rounded-lg border">
           <div className="space-y-2">
             <Label>Select Store</Label>
             <ShopDropdown 
@@ -466,19 +466,19 @@ export default function AddProductPage() {
               </div>
 
               {imageUrls.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 lg:gap-4">
                   {imageUrls.map((url, index) => (
                     <div key={index} className="relative">
                       <img
                         src={url}
                         alt={`Upload ${index + 1}`}
-                        className="w-full h-24 object-cover rounded"
+                        className="w-full h-20 sm:h-24 object-cover rounded"
                       />
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 h-5 w-5 sm:h-6 sm:w-6 rounded-full p-0"
                         onClick={() => removeImage(index)}
                       >
                         <X className="h-3 w-3" />
@@ -545,7 +545,7 @@ export default function AddProductPage() {
               </div>
 
               {/* Vendor and Tags - Two Column Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vendor">Vendor</Label>
                   <Input
@@ -634,7 +634,7 @@ export default function AddProductPage() {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Size</Label>
                       <Input
@@ -684,15 +684,16 @@ export default function AddProductPage() {
           </Card>
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push('/dashboard')}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

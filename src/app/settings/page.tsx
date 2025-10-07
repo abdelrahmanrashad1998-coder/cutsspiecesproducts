@@ -83,10 +83,10 @@ export default function SettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-4 lg:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600">Manage your application settings and connections</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Settings</h1>
+          <p className="text-sm lg:text-base text-gray-600">Manage your application settings and connections</p>
         </div>
 
         {/* Environment Status */}
@@ -98,7 +98,7 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="flex items-center justify-between p-3 border rounded">
                 <div className="flex items-center">
                   <Store className="mr-2 h-4 w-4" />
@@ -181,11 +181,11 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
               <Button 
                 onClick={handleSaveSettings} 
                 disabled={saving}
-                className="flex items-center"
+                className="flex items-center w-full sm:w-auto"
               >
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Settings'}
@@ -193,12 +193,14 @@ export default function SettingsPage() {
               <Button 
                 onClick={handleClearSettings} 
                 variant="outline"
+                className="w-full sm:w-auto"
               >
                 Clear Settings
               </Button>
               <Button 
                 onClick={() => handleTestConnection('openai')} 
                 variant="outline"
+                className="w-full sm:w-auto"
               >
                 Test OpenAI Connection
               </Button>
@@ -282,8 +284,8 @@ export default function SettingsPage() {
                 className="bg-gray-50"
               />
             </div>
-            <div className="flex space-x-4">
-              <Button onClick={() => handleTestConnection('shopify')} variant="outline">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+              <Button onClick={() => handleTestConnection('shopify')} variant="outline" className="w-full sm:w-auto">
                 Test Shopify Connection
               </Button>
             </div>

@@ -22,7 +22,11 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
 
@@ -37,11 +41,20 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col bg-gray-900">
-      <div className="flex h-16 items-center px-4">
+      <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-2">
           <Package className="h-8 w-8 text-white" />
           <span className="text-xl font-bold text-white">Shopify AI</span>
         </div>
+        {/* Close button for mobile */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          className="lg:hidden p-2 text-white hover:bg-gray-700"
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </div>
       
       {/* User Info */}
@@ -80,6 +93,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
                 isActive

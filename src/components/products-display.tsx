@@ -414,72 +414,200 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
-                      <TableHead className="min-w-[200px]">Product</TableHead>
-                      <TableHead className="min-w-[120px] hidden md:table-cell">Vendor</TableHead>
-                      <TableHead className="min-w-[120px] hidden lg:table-cell">Collection</TableHead>
-                      <TableHead className="w-24 hidden sm:table-cell">Price</TableHead>
-                      <TableHead className="w-24">Status</TableHead>
-                      <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
-                      <TableHead className="w-24">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedProducts.map((product) => (
-                      <TableRow key={product.id} className="group">
-                        <TableCell className="hidden sm:table-cell">
-                          <div className="relative">
-                            {product.images.length > 0 ? (
-                              <img
-                                src={product.images[0].src}
-                                alt={product.images[0].alt || product.title}
-                                className="h-12 w-12 object-cover rounded-lg border"
-                              />
+                {/* Desktop Table */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">Image</TableHead>
+                        <TableHead className="min-w-[200px]">Product</TableHead>
+                        <TableHead className="min-w-[120px]">Vendor</TableHead>
+                        <TableHead className="min-w-[120px]">Collection</TableHead>
+                        <TableHead className="w-24">Price</TableHead>
+                        <TableHead className="w-24">Status</TableHead>
+                        <TableHead className="w-32">Created</TableHead>
+                        <TableHead className="w-24">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedProducts.map((product) => (
+                        <TableRow key={product.id} className="group">
+                          <TableCell>
+                            <div className="relative">
+                              {product.images.length > 0 ? (
+                                <img
+                                  src={product.images[0].src}
+                                  alt={product.images[0].alt || product.title}
+                                  className="h-12 w-12 object-cover rounded-lg border"
+                                />
+                              ) : (
+                                <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center border">
+                                  <Package className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm leading-tight">{product.title}</div>
+                              <div className="text-xs text-muted-foreground font-mono">#{product.handle}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{product.vendor || '—'}</span>
+                          </TableCell>
+                          <TableCell>
+                            {editingProduct === product.id ? (
+                              <div className="flex items-center space-x-2">
+                                <Select value={editingCollection} onValueChange={setEditingCollection}>
+                                  <SelectTrigger className="h-8 text-sm w-32">
+                                    <SelectValue placeholder="Select collection" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">No collection</SelectItem>
+                                    {collections.map((collection) => (
+                                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                                        {collection.title}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => saveCollection(product)}
+                                  disabled={isUpdating}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Save className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={cancelEditing}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
                             ) : (
-                              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center border">
-                                <Package className="h-5 w-5 text-muted-foreground" />
+                              <div className="flex items-center space-x-2 group">
+                                <span className="text-sm">
+                                  {product.collections && product.collections.length > 0 
+                                    ? product.collections[0].title 
+                                    : '—'
+                                  }
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => startEditingCollection(product)}
+                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
                               </div>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <div className="sm:hidden">
-                                {product.images.length > 0 ? (
-                                  <img
-                                    src={product.images[0].src}
-                                    alt={product.images[0].alt || product.title}
-                                    className="h-8 w-8 object-cover rounded border"
-                                  />
-                                ) : (
-                                  <div className="h-8 w-8 bg-muted rounded flex items-center justify-center border">
-                                    <Package className="h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="font-medium text-sm leading-tight truncate">{product.title}</div>
-                                <div className="text-xs text-muted-foreground font-mono">#{product.handle}</div>
-                                <div className="md:hidden text-xs text-muted-foreground">
-                                  {product.vendor && `${product.vendor} • `}
-                                  {product.variants.length > 0 && formatCurrency(product.variants[0].price, shopCurrency)}
-                                </div>
-                              </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium text-sm">
+                              {product.variants.length > 0 ? formatCurrency(
+                                product.variants[0].price, 
+                                shopCurrency
+                              ) : '—'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={product.status === 'active' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {product.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {formatDate(product.created_at)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(`https://${selectedShop.shopifyDomain}/products/${product.handle}`, '_blank')}
+                                title="View product on store"
+                                className="h-8 w-8 p-0"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                              <Link href={`/edit-product/${product.id}`}>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  title="Edit product"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </Link>
                             </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card Layout */}
+                <div className="lg:hidden space-y-3">
+                  {paginatedProducts.map((product) => (
+                    <div key={product.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          {product.images.length > 0 ? (
+                            <img
+                              src={product.images[0].src}
+                              alt={product.images[0].alt || product.title}
+                              className="h-16 w-16 object-cover rounded-lg border"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center border">
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm leading-tight mb-1">{product.title}</h3>
+                          <p className="text-xs text-muted-foreground font-mono mb-2">#{product.handle}</p>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Badge 
+                              variant={product.status === 'active' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {product.status}
+                            </Badge>
+                            {product.variants.length > 0 && (
+                              <span className="text-sm font-medium">
+                                {formatCurrency(product.variants[0].price, shopCurrency)}
+                              </span>
+                            )}
                           </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className="text-sm">{product.vendor || '—'}</span>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
+                          {product.vendor && (
+                            <p className="text-xs text-muted-foreground mb-1">Vendor: {product.vendor}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">Created: {formatDate(product.created_at)}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Collection Section */}
+                      <div className="border-t pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">Collection:</span>
                           {editingProduct === product.id ? (
                             <div className="flex items-center space-x-2">
                               <Select value={editingCollection} onValueChange={setEditingCollection}>
-                                <SelectTrigger className="h-8 text-sm w-32">
+                                <SelectTrigger className="h-8 text-xs w-32">
                                   <SelectValue placeholder="Select collection" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -510,72 +638,51 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                               </Button>
                             </div>
                           ) : (
-                            <div className="flex items-center space-x-2 group">
+                            <div className="flex items-center space-x-2">
                               <span className="text-sm">
                                 {product.collections && product.collections.length > 0 
                                   ? product.collections[0].title 
-                                  : '—'
+                                  : 'No collection'
                                 }
                               </span>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => startEditingCollection(product)}
-                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-6 w-6 p-0"
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
                             </div>
                           )}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <span className="font-medium text-sm">
-                            {product.variants.length > 0 ? formatCurrency(
-                              product.variants[0].price, 
-                              shopCurrency
-                            ) : '—'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={product.status === 'active' ? 'default' : 'secondary'}
-                            className="text-xs"
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-2 pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`https://${selectedShop.shopifyDomain}/products/${product.handle}`, '_blank')}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                        <Link href={`/edit-product/${product.id}`}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-3 text-xs"
                           >
-                            {product.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(product.created_at)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(`https://${selectedShop.shopifyDomain}/products/${product.handle}`, '_blank')}
-                              title="View product on store"
-                              className="h-8 w-8 p-0"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                            <Link href={`/edit-product/${product.id}`}>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                title="Edit product"
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 
                 {/* Pagination */}
                 <div className="mt-4">

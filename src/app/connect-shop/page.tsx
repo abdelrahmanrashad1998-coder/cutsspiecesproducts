@@ -231,13 +231,13 @@ export default function ManageShopsPage() {
     <DashboardLayout>
       <div className="space-y-8">
         {/* Header Section */}
-        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center">
-              <Settings className="mr-3 h-8 w-8" />
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight flex items-center">
+              <Settings className="mr-2 lg:mr-3 h-6 w-6 lg:h-8 lg:w-8" />
               Manage Shops
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm lg:text-base text-muted-foreground">
               Connect, edit, and manage your Shopify stores
             </p>
           </div>
@@ -270,7 +270,7 @@ export default function ManageShopsPage() {
                 <p className="text-sm">Add your first Shopify store to get started</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {shops.map((shop) => (
                   <div key={shop.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -344,7 +344,7 @@ export default function ManageShopsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shopifyDomain">Shopify Store Domain</Label>
                     <Input
@@ -438,7 +438,7 @@ export default function ManageShopsPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shopName">Shop Name (Optional)</Label>
                     <Input
@@ -476,7 +476,7 @@ export default function ManageShopsPage() {
                   </p>
                 </div>
 
-                <div className="flex space-x-4">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                   <Button 
                     type="submit" 
                     className="flex-1" 
@@ -495,6 +495,7 @@ export default function ManageShopsPage() {
                     type="button" 
                     variant="outline" 
                     onClick={resetForm}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
