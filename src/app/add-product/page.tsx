@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,8 +34,14 @@ interface ProductVariant {
 interface ProductAnalysis {
   title: string
   description: string
-  category: string
-  suggestedPrice?: number
+  tags: string
+  suggestedCollection?: string
+}
+
+interface Collection {
+  id: number
+  title: string
+  handle: string
 }
 
 export default function AddProductPage() {
@@ -48,16 +54,99 @@ export default function AddProductPage() {
   const [productData, setProductData] = useState({
     title: '',
     description: '',
-    category: '',
     vendor: '',
-    price: ''
+    tags: ''
   })
+  const [defaultVendor, setDefaultVendor] = useState<string>('')
   const [variants, setVariants] = useState<ProductVariant[]>([
     { id: '1', title: '', price: '0.00', inventory_tracking: false }
   ])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [selectedCollection, setSelectedCollection] = useState<string>('none')
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+
+  // Fetch collections and default vendor when shop changes
+  useEffect(() => {
+    if (selectedShop && firebaseUser) {
+      fetchCollections()
+      fetchDefaultVendor()
+    } else {
+      setCollections([])
+      setSelectedCollection('none')
+      setDefaultVendor('')
+      setProductData(prev => ({ ...prev, vendor: '' }))
+    }
+  }, [selectedShop, firebaseUser])
+
+  const fetchDefaultVendor = async () => {
+    if (!selectedShop || !firebaseUser) return
+
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      // First try to get user settings for default vendor
+      const settingsResponse = await fetch('/api/user/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      let vendorSetting = 'store_name' // default behavior
+      let settingsData: any = {}
+      if (settingsResponse.ok) {
+        settingsData = await settingsResponse.json()
+        vendorSetting = settingsData.defaultVendor || 'store_name'
+      }
+
+      // Set the default vendor based on the setting
+      if (vendorSetting === 'store_name' && selectedShop.shopName) {
+        setDefaultVendor(selectedShop.shopName)
+        setProductData(prev => ({ ...prev, vendor: selectedShop.shopName }))
+      } else if (vendorSetting === 'custom' && settingsData?.customVendor) {
+        setDefaultVendor(settingsData.customVendor)
+        setProductData(prev => ({ ...prev, vendor: settingsData.customVendor }))
+      } else {
+        setDefaultVendor('')
+        setProductData(prev => ({ ...prev, vendor: '' }))
+      }
+    } catch (error) {
+      console.error('Error fetching default vendor setting:', error)
+      // Fallback to store name
+      if (selectedShop.shopName) {
+        setDefaultVendor(selectedShop.shopName)
+        setProductData(prev => ({ ...prev, vendor: selectedShop.shopName }))
+      }
+    }
+  }
+
+  const fetchCollections = async () => {
+    if (!selectedShop || !firebaseUser) return
+
+    setIsLoadingCollections(true)
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCollections(data.collections || [])
+      } else {
+        console.error('Failed to fetch collections')
+      }
+    } catch (error) {
+      console.error('Error fetching collections:', error)
+    } finally {
+      setIsLoadingCollections(false)
+    }
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -80,6 +169,11 @@ export default function AddProductPage() {
     if (images.length === 0) {
       toast.error('Please upload at least one image')
       return
+    }
+
+    // Ensure collections are loaded before analysis
+    if (collections.length === 0 && selectedShop) {
+      await fetchCollections()
     }
 
     setIsAnalyzing(true)
@@ -136,9 +230,49 @@ export default function AddProductPage() {
           ...prev,
           title: data.analysis.title,
           description: data.analysis.description,
-          category: data.analysis.category,
-          price: data.analysis.suggestedPrice?.toString() || '0.00'
+          tags: data.analysis.tags
         }))
+        
+        // Auto-select suggested collection if available
+        if (data.analysis.suggestedCollection) {
+          const suggestedCollectionName = data.analysis.suggestedCollection.toLowerCase()
+          
+          // Try to find an exact match first
+          let matchingCollection = collections.find(c => 
+            c.title.toLowerCase() === suggestedCollectionName
+          )
+          
+          // If no exact match, try partial matches
+          if (!matchingCollection) {
+            matchingCollection = collections.find(c => 
+              c.title.toLowerCase().includes(suggestedCollectionName) ||
+              suggestedCollectionName.includes(c.title.toLowerCase())
+            )
+          }
+          
+          // If still no match, try word-based matching
+          if (!matchingCollection) {
+            const suggestedWords = suggestedCollectionName.split(/\s+/)
+            matchingCollection = collections.find(c => {
+              const collectionWords = c.title.toLowerCase().split(/\s+/)
+              return suggestedWords.some(word => 
+                word.length > 2 && collectionWords.some(cWord => 
+                  cWord.includes(word) || word.includes(cWord)
+                )
+              )
+            })
+          }
+          
+          if (matchingCollection) {
+            setSelectedCollection(matchingCollection.id.toString())
+            toast.success(`Auto-selected collection: ${matchingCollection.title}`)
+          } else {
+            // If no matching collection found, keep "none" selected
+            setSelectedCollection('none')
+            toast.info(`AI suggested collection "${data.analysis.suggestedCollection}" but no matching collection found. You can create a new collection or select an existing one.`)
+          }
+        }
+        
         toast.success('Images analyzed successfully!')
       } else {
         toast.error(data.error || 'Failed to analyze images')
@@ -207,7 +341,7 @@ export default function AddProductPage() {
         title: productData.title,
         body_html: productData.description,
         vendor: productData.vendor || 'Default Vendor',
-        product_type: productData.category,
+        tags: productData.tags,
         variants: variants.map(variant => ({
           price: variant.price,
           option1: variant.option1,
@@ -225,7 +359,13 @@ export default function AddProductPage() {
         return
       }
 
-      const response = await fetch('/api/products', {
+      // Use shop-specific API route instead of global route
+      if (!selectedShop) {
+        toast.error('Please select a shop first')
+        return
+      }
+
+      const response = await fetch(`/api/shops/${selectedShop.id}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +375,34 @@ export default function AddProductPage() {
       })
 
       if (response.ok) {
-        toast.success('Product created successfully!')
+        const productData = await response.json()
+        
+        // Add product to collection if one is selected
+        if (selectedCollection && selectedCollection !== "none" && productData.product?.id) {
+          try {
+            const collectionResponse = await fetch(`/api/shops/${selectedShop.id}/collections/${selectedCollection}/products`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                productId: productData.product.id
+              }),
+            })
+
+            if (collectionResponse.ok) {
+              toast.success('Product created and added to collection successfully!')
+            } else {
+              toast.success('Product created successfully, but failed to add to collection')
+            }
+          } catch (collectionError) {
+            toast.success('Product created successfully, but failed to add to collection')
+          }
+        } else {
+          toast.success('Product created successfully!')
+        }
+        
         router.push('/dashboard')
       } else {
         const errorData = await response.json()
@@ -257,11 +424,14 @@ export default function AddProductPage() {
         </div>
 
         {/* Shop Selection */}
-        <div className="bg-white p-4 rounded-lg border">
-          <ShopDropdown 
-            selectedShop={selectedShop} 
-            onShopSelect={setSelectedShop} 
-          />
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="space-y-2">
+            <Label>Select Store</Label>
+            <ShopDropdown 
+              selectedShop={selectedShop} 
+              onShopSelect={setSelectedShop} 
+            />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -346,29 +516,21 @@ export default function AddProductPage() {
             <CardHeader>
               <CardTitle>Product Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Product Title *</Label>
-                  <Input
-                    id="title"
-                    value={productData.title}
-                    onChange={(e) => setProductData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter product title"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vendor">Vendor</Label>
-                  <Input
-                    id="vendor"
-                    value={productData.vendor}
-                    onChange={(e) => setProductData(prev => ({ ...prev, vendor: e.target.value }))}
-                    placeholder="Enter vendor name"
-                  />
-                </div>
+            <CardContent className="space-y-6">
+              {/* Product Title - Full Width */}
+              <div className="space-y-2">
+                <Label htmlFor="title">Product Title *</Label>
+                <Input
+                  id="title"
+                  value={productData.title}
+                  onChange={(e) => setProductData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter product title"
+                  required
+                  className="h-10"
+                />
               </div>
 
+              {/* Description - Full Width */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
@@ -378,30 +540,68 @@ export default function AddProductPage() {
                   placeholder="Enter product description"
                   rows={4}
                   required
+                  className="min-h-[100px]"
                 />
               </div>
 
+              {/* Vendor and Tags - Two Column Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="vendor">Vendor</Label>
                   <Input
-                    id="category"
-                    value={productData.category}
-                    onChange={(e) => setProductData(prev => ({ ...prev, category: e.target.value }))}
-                    placeholder="Enter product category"
+                    id="vendor"
+                    value={productData.vendor}
+                    onChange={(e) => setProductData(prev => ({ ...prev, vendor: e.target.value }))}
+                    placeholder={defaultVendor ? `Default: ${defaultVendor}` : "Enter vendor name"}
+                    className="h-10"
                   />
+                  {defaultVendor && (
+                    <p className="text-xs text-muted-foreground">
+                      Default vendor: {defaultVendor} (can be changed in Settings)
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="price">Base Price</Label>
+                  <Label htmlFor="tags">Tags</Label>
                   <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={productData.price}
-                    onChange={(e) => setProductData(prev => ({ ...prev, price: e.target.value }))}
-                    placeholder="0.00"
+                    id="tags"
+                    value={productData.tags}
+                    onChange={(e) => setProductData(prev => ({ ...prev, tags: e.target.value }))}
+                    placeholder="Enter tags separated by commas"
+                    className="h-10"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Separate multiple tags with commas
+                  </p>
                 </div>
+              </div>
+
+              {/* Collection - Full Width */}
+              <div className="space-y-2">
+                <Label htmlFor="collection">Collection (Optional)</Label>
+                <Select value={selectedCollection} onValueChange={setSelectedCollection}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder={isLoadingCollections ? "Loading collections..." : "Select a collection"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No collection</SelectItem>
+                    {collections.map((collection) => (
+                      <SelectItem key={collection.id} value={collection.id.toString()}>
+                        {collection.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {analysis?.suggestedCollection && (
+                  <div className="text-sm text-muted-foreground">
+                    <p>AI suggested: "{analysis.suggestedCollection}"</p>
+                    {selectedCollection !== 'none' && collections.find(c => c.id.toString() === selectedCollection) && (
+                      <p className="text-green-600 font-medium">
+                        ✓ Auto-selected: {collections.find(c => c.id.toString() === selectedCollection)?.title}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -441,16 +641,19 @@ export default function AddProductPage() {
                         value={variant.option1 || ''}
                         onChange={(e) => updateVariant(variant.id, 'option1', e.target.value)}
                         placeholder="Small"
+                        className="h-10"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Price</Label>
+                      <Label>Price *</Label>
                       <Input
                         type="number"
                         step="0.01"
                         value={variant.price}
                         onChange={(e) => updateVariant(variant.id, 'price', e.target.value)}
                         placeholder="0.00"
+                        className="h-10"
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -459,6 +662,7 @@ export default function AddProductPage() {
                         value={variant.option2 || ''}
                         onChange={(e) => updateVariant(variant.id, 'option2', e.target.value)}
                         placeholder="Red"
+                        className="h-10"
                       />
                     </div>
                   </div>

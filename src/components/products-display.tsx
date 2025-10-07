@@ -22,7 +22,9 @@ import {
   Loader2,
   ExternalLink,
   Check,
-  RefreshCw
+  RefreshCw,
+  Save,
+  X
 } from 'lucide-react'
 import { DataTablePagination } from '@/components/ui/data-table-pagination'
 import { toast } from 'sonner'
@@ -51,6 +53,17 @@ interface Product {
     src: string
     alt: string | null
   }>
+  collections?: Array<{
+    id: number
+    title: string
+    handle: string
+  }>
+}
+
+interface Collection {
+  id: number
+  title: string
+  handle: string
 }
 
 interface ProductsDisplayProps {
@@ -68,17 +81,24 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [shopCurrency, setShopCurrency] = useState<string>('USD')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(5)
+  const [editingProduct, setEditingProduct] = useState<number | null>(null)
+  const [editingCollection, setEditingCollection] = useState<string>('none')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
     if (selectedShop) {
       fetchProducts()
+      fetchCollections()
     } else {
       setProducts([])
       setFilteredProducts([])
       setSearchTerm('')
       setError(null)
       setCurrentPage(1)
+      setCollections([])
     }
   }, [selectedShop])
 
@@ -91,6 +111,32 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
     setFilteredProducts(filtered)
     setCurrentPage(1) // Reset to first page when search changes
   }, [products, searchTerm])
+
+  const fetchCollections = async () => {
+    if (!selectedShop || !firebaseUser) return
+
+    setIsLoadingCollections(true)
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCollections(data.collections || [])
+      } else {
+        console.error('Failed to fetch collections')
+      }
+    } catch (error) {
+      console.error('Error fetching collections:', error)
+    } finally {
+      setIsLoadingCollections(false)
+    }
+  }
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
@@ -166,6 +212,93 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const startEditingCollection = (product: Product) => {
+    setEditingProduct(product.id)
+    // Set the current collection if the product belongs to any collections
+    if (product.collections && product.collections.length > 0) {
+      // For now, we'll use the first collection the product belongs to
+      setEditingCollection(product.collections[0].id.toString())
+    } else {
+      setEditingCollection('none')
+    }
+  }
+
+  const cancelEditing = () => {
+    setEditingProduct(null)
+    setEditingCollection('none')
+  }
+
+  const saveCollection = async (product: Product) => {
+    if (!selectedShop || !firebaseUser) return
+
+    setIsUpdating(true)
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      // Get current collection ID
+      const currentCollectionId = product.collections && product.collections.length > 0 
+        ? product.collections[0].id.toString() 
+        : 'none'
+      
+      // Only update if collection has changed
+      if (editingCollection !== currentCollectionId) {
+        if (editingCollection && editingCollection !== "none") {
+          // Add product to new collection
+          const response = await fetch(`/api/shops/${selectedShop.id}/collections/${editingCollection}/products`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              productId: product.id
+            }),
+          })
+
+          if (response.ok) {
+            // Update local state to reflect the change
+            const newCollection = collections.find(c => c.id.toString() === editingCollection)
+            if (newCollection) {
+              setProducts(prev => prev.map(p => 
+                p.id === product.id 
+                  ? { ...p, collections: [newCollection] }
+                  : p
+              ))
+            }
+            
+            setEditingProduct(null)
+            setEditingCollection('none')
+            toast.success('Product collection updated successfully!')
+          } else {
+            const errorData = await response.json()
+            toast.error(`Failed to update collection: ${errorData.error}`)
+          }
+        } else {
+          // Product was removed from collections (set to "none")
+          // Note: This requires manual removal from Shopify admin for manual collections
+          setProducts(prev => prev.map(p => 
+            p.id === product.id 
+              ? { ...p, collections: [] }
+              : p
+          ))
+          
+          setEditingProduct(null)
+          setEditingCollection('none')
+          toast.success('Product removed from collection! Note: For manual collections, you may need to remove it from Shopify admin as well.')
+        }
+      } else {
+        // No change needed
+        setEditingProduct(null)
+        setEditingCollection('none')
+        toast.info('No changes made')
+      }
+    } catch (error) {
+      toast.error('Error updating collection')
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   if (!selectedShop) {
@@ -287,7 +420,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                       <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
                       <TableHead className="min-w-[200px]">Product</TableHead>
                       <TableHead className="min-w-[120px] hidden md:table-cell">Vendor</TableHead>
-                      <TableHead className="min-w-[120px] hidden lg:table-cell">Category</TableHead>
+                      <TableHead className="min-w-[120px] hidden lg:table-cell">Collection</TableHead>
                       <TableHead className="w-24 hidden sm:table-cell">Price</TableHead>
                       <TableHead className="w-24">Status</TableHead>
                       <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
@@ -343,7 +476,57 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                           <span className="text-sm">{product.vendor || '—'}</span>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <span className="text-sm">{product.product_type || '—'}</span>
+                          {editingProduct === product.id ? (
+                            <div className="flex items-center space-x-2">
+                              <Select value={editingCollection} onValueChange={setEditingCollection}>
+                                <SelectTrigger className="h-8 text-sm w-32">
+                                  <SelectValue placeholder="Select collection" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No collection</SelectItem>
+                                  {collections.map((collection) => (
+                                    <SelectItem key={collection.id} value={collection.id.toString()}>
+                                      {collection.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => saveCollection(product)}
+                                disabled={isUpdating}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={cancelEditing}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2 group">
+                              <span className="text-sm">
+                                {product.collections && product.collections.length > 0 
+                                  ? product.collections[0].title 
+                                  : '—'
+                                }
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditingCollection(product)}
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <span className="font-medium text-sm">

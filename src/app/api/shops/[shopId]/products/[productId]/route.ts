@@ -204,7 +204,7 @@ export async function GET(
       )
     }
 
-    // Get product from Shopify
+    // First try the REST API to get the product, then use GraphQL for collections if needed
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products/${productId}.json`
     const response = await fetch(shopifyUrl, {
       headers: {
@@ -223,8 +223,71 @@ export async function GET(
     }
 
     const productData = await response.json()
+    const product = productData.product
+
+    // Now get collections using GraphQL
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2023-10/graphql.json`
+    
+    const graphqlQuery = {
+      query: `
+        query getProductCollections($id: ID!) {
+          product(id: $id) {
+            id
+            collections(first: 50) {
+              edges {
+                node {
+                  id
+                  title
+                  handle
+                }
+              }
+            }
+          }
+        }
+      `,
+      variables: {
+        id: `gid://shopify/Product/${productId}`
+      }
+    }
+    
+    let collections: any[] = []
+    
+    try {
+      const graphqlResponse = await fetch(graphqlUrl, {
+        method: 'POST',
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(graphqlQuery)
+      })
+
+      if (graphqlResponse.ok) {
+        const graphqlData = await graphqlResponse.json()
+        
+        if (graphqlData.data?.product?.collections) {
+          collections = graphqlData.data.product.collections.edges.map((edge: any) => ({
+            id: parseInt(edge.node.id.split('/').pop()) || 0,
+            title: edge.node.title,
+            handle: edge.node.handle
+          }))
+        }
+      } else {
+        console.warn('Failed to fetch collections via GraphQL, continuing without collections')
+      }
+    } catch (graphqlError) {
+      console.warn('GraphQL error for collections, continuing without collections:', graphqlError)
+    }
+
+    // Transform the product data to include collections
+    const transformedProduct = {
+      ...product,
+      collections: collections
+    }
+
     return NextResponse.json({ 
-      product: productData.product
+      product: transformedProduct
     })
 
   } catch (error: any) {
