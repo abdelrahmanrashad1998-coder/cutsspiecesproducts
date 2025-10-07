@@ -244,15 +244,20 @@ export async function POST(
   console.log('Request method:', request.method)
   
   try {
+    console.log('Step 1: Verifying auth token...')
     const decodedToken = await verifyAuthToken(request)
     const userId = decodedToken.uid
+    console.log('Step 2: Getting params...')
     const { shopId } = await params
+    console.log('Step 3: Parsing request JSON...')
     const productData = await request.json()
     
     console.log('Request processed successfully:', { shopId, userId, productTitle: productData.title })
 
     // Validate required fields
+    console.log('Step 4: Validating required fields...')
     if (!productData.title || !productData.body_html) {
+      console.log('Validation failed: missing title or body_html')
       const response = NextResponse.json(
         { error: 'Title and description are required' },
         { status: 400 }
@@ -261,16 +266,21 @@ export async function POST(
     }
 
     // Verify the shop belongs to the user
+    console.log('Step 5: Checking database connection...')
     if (!db) {
+      console.log('Database not initialized')
       const response = NextResponse.json(
         { error: 'Database not initialized' },
         { status: 500 }
       )
       return addCorsHeaders(response)
     }
+    console.log('Step 6: Fetching shop document...')
     const shopDoc = await db.collection('shops').doc(shopId).get()
     
+    console.log('Step 7: Checking if shop exists...')
     if (!shopDoc.exists) {
+      console.log('Shop not found for ID:', shopId)
       const response = NextResponse.json(
         { error: 'Shop not found' },
         { status: 404 }
@@ -278,8 +288,10 @@ export async function POST(
       return addCorsHeaders(response)
     }
 
+    console.log('Step 8: Verifying shop ownership...')
     const shopData = shopDoc.data()
     if (shopData?.userId !== userId) {
+      console.log('Unauthorized access - userId mismatch')
       const response = NextResponse.json(
         { error: 'Unauthorized access to shop' },
         { status: 403 }
@@ -288,10 +300,12 @@ export async function POST(
     }
 
     // Get shop credentials
+    console.log('Step 9: Getting shop credentials...')
     const shopifyDomain = shopData.shopifyDomain
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
+      console.log('Missing shop credentials:', { hasDomain: !!shopifyDomain, hasToken: !!accessToken })
       const response = NextResponse.json(
         { error: 'Shop credentials not found' },
         { status: 400 }
@@ -300,6 +314,7 @@ export async function POST(
     }
 
     // Clean up the product data for Shopify API - replace null values with defaults
+    console.log('Step 10: Cleaning product data...')
     const cleanedProductData = {
       ...productData,
       variants: productData.variants?.map((variant: any) => {
@@ -320,10 +335,14 @@ export async function POST(
         return cleanedVariant
       }) || []
     }
+    console.log('Cleaned product data:', JSON.stringify(cleanedProductData, null, 2))
 
     // Create product in Shopify using GraphQL API (with REST fallback)
+    console.log('Step 11: Setting up API URLs...')
     const graphqlUrl = `https://${shopifyDomain}/admin/api/2024-10/graphql.json`
     const restUrl = `https://${shopifyDomain}/admin/api/2024-01/products.json`
+    console.log('GraphQL URL:', graphqlUrl)
+    console.log('REST URL:', restUrl)
     
     // Build GraphQL mutation
     const graphqlMutation = `
@@ -391,6 +410,7 @@ export async function POST(
     console.log('GraphQL variables:', JSON.stringify(graphqlVariables, null, 2))
     
     // Try GraphQL first, fallback to REST if it fails
+    console.log('Step 12: Attempting GraphQL API call...')
     let shopifyResponse: Response | undefined
     let useGraphQL = true
     
@@ -408,8 +428,10 @@ export async function POST(
       })
       
       if (!shopifyResponse.ok) {
-        console.log('GraphQL failed, trying REST API...')
+        console.log('GraphQL failed with status:', shopifyResponse.status, 'trying REST API...')
         useGraphQL = false
+      } else {
+        console.log('GraphQL call successful')
       }
     } catch (error) {
       console.log('GraphQL error, trying REST API...', error)
@@ -527,9 +549,14 @@ export async function POST(
     })
     return addCorsHeaders(response)
   } catch (error: any) {
-    console.error('Error creating product:', error)
+    console.error('=== ERROR IN PRODUCT CREATION ===')
+    console.error('Error type:', typeof error)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
+    console.error('Full error object:', JSON.stringify(error, null, 2))
     
     if (error.message === 'No authorization token provided') {
+      console.log('Authentication error - no token provided')
       const response = NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -537,11 +564,13 @@ export async function POST(
       return addCorsHeaders(response)
     }
     
+    console.log('Returning 500 error response')
     const response = NextResponse.json(
       { 
         error: 'Internal server error',
         message: 'An unexpected error occurred while creating the product',
-        details: error.message
+        details: error.message,
+        stack: error.stack
       },
       { status: 500 }
     )
