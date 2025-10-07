@@ -344,6 +344,25 @@ export async function POST(
     console.log('GraphQL URL:', graphqlUrl)
     console.log('REST URL:', restUrl)
     
+    // Try REST API first since it's more reliable
+    console.log('Step 12: Using REST API directly...')
+    const restProductData = {
+      product: cleanedProductData
+    }
+    
+    console.log('REST API payload:', JSON.stringify(restProductData, null, 2))
+    
+    const shopifyResponse = await fetch(restUrl, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(restProductData),
+    })
+    
+    const useGraphQL = false // Force REST API for now
+    
     // Build GraphQL mutation
     const graphqlMutation = `
       mutation productCreate($product: ProductCreateInput!) {
@@ -409,53 +428,6 @@ export async function POST(
     console.log('Creating product in Shopify:', productData.title)
     console.log('GraphQL variables:', JSON.stringify(graphqlVariables, null, 2))
     
-    // Try GraphQL first, fallback to REST if it fails
-    console.log('Step 12: Attempting GraphQL API call...')
-    let shopifyResponse: Response | undefined
-    let useGraphQL = true
-    
-    try {
-      shopifyResponse = await fetch(graphqlUrl, {
-        method: 'POST',
-        headers: {
-          'X-Shopify-Access-Token': accessToken,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: graphqlMutation,
-          variables: graphqlVariables
-        }),
-      })
-      
-      if (!shopifyResponse.ok) {
-        console.log('GraphQL failed with status:', shopifyResponse.status, 'trying REST API...')
-        useGraphQL = false
-      } else {
-        console.log('GraphQL call successful')
-      }
-    } catch (error) {
-      console.log('GraphQL error, trying REST API...', error)
-      useGraphQL = false
-    }
-    
-    // Fallback to REST API if GraphQL failed
-    if (!useGraphQL) {
-      const restProductData = {
-        product: cleanedProductData
-      }
-      
-      console.log('Using REST API with data:', JSON.stringify(restProductData, null, 2))
-      
-      shopifyResponse = await fetch(restUrl, {
-        method: 'POST',
-        headers: {
-          'X-Shopify-Access-Token': accessToken,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(restProductData),
-      })
-    }
-    
     // Ensure we have a response
     if (!shopifyResponse) {
       const errorResponse = NextResponse.json(
@@ -480,72 +452,41 @@ export async function POST(
     }
 
     const shopifyResponseData = await shopifyResponse.json()
-    console.log('Shopify response:', JSON.stringify(shopifyResponseData, null, 2))
+    console.log('Shopify REST API response:', JSON.stringify(shopifyResponseData, null, 2))
     
-    let productId: string
-    let finalProductData: any
+    // Handle REST response
+    console.log('REST API response structure:', JSON.stringify(shopifyResponseData, null, 2))
     
-    if (useGraphQL) {
-      // Handle GraphQL response
-      const graphqlResponse = shopifyResponseData
-      
-      // Check for GraphQL errors
-      if (graphqlResponse.errors) {
-        console.error('GraphQL errors:', graphqlResponse.errors)
-        const errorResponse = NextResponse.json(
-          { error: 'GraphQL errors occurred', details: graphqlResponse.errors },
-          { status: 500 }
-        )
-        return addCorsHeaders(errorResponse)
-      }
-      
-      const productCreateResult = graphqlResponse.data?.productCreate
-      
-      // Check for user errors
-      if (productCreateResult?.userErrors?.length > 0) {
-        console.error('Shopify user errors:', productCreateResult.userErrors)
-        const errorResponse = NextResponse.json(
-          { error: 'Product creation failed', details: productCreateResult.userErrors },
-          { status: 400 }
-        )
-        return addCorsHeaders(errorResponse)
-      }
-      
-      // Check if product was actually created
-      if (!productCreateResult?.product?.id) {
-        console.error('No product created:', productCreateResult)
-        const errorResponse = NextResponse.json(
-          { error: 'Product creation failed - no product ID returned from Shopify', details: productCreateResult },
-          { status: 500 }
-        )
-        return addCorsHeaders(errorResponse)
-      }
-      
-      productId = productCreateResult.product.id
-      finalProductData = productCreateResult.product
-    } else {
-      // Handle REST response
-      if (!shopifyResponseData.product || !shopifyResponseData.product.id) {
-        console.error('REST API: No product created:', shopifyResponseData)
-        const errorResponse = NextResponse.json(
-          { error: 'Product creation failed - no product ID returned from Shopify', details: shopifyResponseData },
-          { status: 500 }
-        )
-        return addCorsHeaders(errorResponse)
-      }
-      
-      productId = shopifyResponseData.product.id
-      finalProductData = shopifyResponseData.product
+    // Check if response has 'product' or 'products' array
+    let shopifyProduct = null
+    if (shopifyResponseData.product) {
+      shopifyProduct = shopifyResponseData.product
+      console.log('Found product in response:', shopifyProduct)
+    } else if (shopifyResponseData.products && Array.isArray(shopifyResponseData.products) && shopifyResponseData.products.length > 0) {
+      shopifyProduct = shopifyResponseData.products[0]
+      console.log('Using first product from products array:', shopifyProduct)
     }
+    
+    if (!shopifyProduct || !shopifyProduct.id) {
+      console.error('REST API: No product created. Response structure:', shopifyResponseData)
+      const errorResponse = NextResponse.json(
+        { error: 'Product creation failed - no product ID returned from Shopify', details: shopifyResponseData },
+        { status: 500 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    const productId = shopifyProduct.id
+    const finalProductData = shopifyProduct
 
     console.log('Product created successfully in Shopify with ID:', productId)
-    console.log('API used:', useGraphQL ? 'GraphQL' : 'REST')
+    console.log('API used: REST')
 
     const response = NextResponse.json({ 
       success: true,
       product: finalProductData,
       message: 'Product created successfully',
-      apiUsed: useGraphQL ? 'GraphQL' : 'REST'
+      apiUsed: 'REST'
     })
     return addCorsHeaders(response)
   } catch (error: any) {
