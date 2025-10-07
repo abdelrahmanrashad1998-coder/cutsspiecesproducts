@@ -22,6 +22,7 @@ import {
   Check,
   RefreshCw
 } from 'lucide-react'
+import { DataTablePagination } from '@/components/ui/data-table-pagination'
 import { toast } from 'sonner'
 import { useAuth, Shop } from '@/contexts/AuthContext'
 import { diagnoseCollectionIssues, generateDiagnosticMessage } from '@/lib/collections-diagnostics'
@@ -63,6 +64,8 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
@@ -73,6 +76,7 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
       setFilteredCollections([])
       setSearchTerm('')
       setError(null)
+      setCurrentPage(1)
     }
   }, [selectedShop])
 
@@ -82,7 +86,23 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
       collection.handle.toLowerCase().includes(searchTerm.toLowerCase())
     )
     setFilteredCollections(filtered)
+    setCurrentPage(1) // Reset to first page when search changes
   }, [collections, searchTerm])
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredCollections.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedCollections = filteredCollections.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Reset to first page when changing items per page
+  }
 
   const fetchCollections = async (isRefresh = false) => {
     if (!selectedShop) {
@@ -228,11 +248,14 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <FolderOpen className="mr-2 h-5 w-5" />
-            Collections ({filteredCollections.length})
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <FolderOpen className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-xl">Collections</CardTitle>
+            <Badge variant="secondary" className="ml-2">
+              {filteredCollections.length}
+            </Badge>
           </div>
           {selectedShop && (
             <Button 
@@ -251,7 +274,7 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
               Refresh
             </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -271,7 +294,7 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
           <>
             {/* Search */}
             <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Search collections by title or handle..."
                 value={searchTerm}
@@ -282,81 +305,142 @@ export function CollectionsDisplay({ selectedShop }: CollectionsDisplayProps) {
 
             {/* Collections Table */}
             {filteredCollections.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'No collections found matching your search.' : 'No collections found in this shop.'}
+              <div className="text-center py-12">
+                <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                  {searchTerm ? 'No collections found' : 'No collections available'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {searchTerm ? 'Try adjusting your search terms.' : 'Create your first collection to organize products.'}
+                </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Image</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Handle</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Sort Order</TableHead>
-                    <TableHead>Rules</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCollections.map((collection) => (
-                    <TableRow key={collection.id}>
-                      <TableCell>
-                        {collection.image ? (
-                          <img
-                            src={collection.image.src}
-                            alt={collection.image.alt || collection.title}
-                            className="h-12 w-12 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
-                            <FolderOpen className="h-6 w-6 text-gray-400" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {collection.title}
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                          {collection.handle}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getPublishedStatus(collection) === 'Published' ? 'default' : 'secondary'}>
-                          {getPublishedStatus(collection)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {collection.sort_order}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">
-                          {collection.rules.length} rule{collection.rules.length !== 1 ? 's' : ''}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(collection.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(`https://${selectedShop.shopifyDomain}/collections/${collection.handle}`, '_blank')}
-                            title="View collection on store"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {filteredCollections.length} of {collections.length} collections
+                  </p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
+                      <TableHead className="min-w-[200px]">Collection</TableHead>
+                      <TableHead className="min-w-[120px] hidden md:table-cell">Handle</TableHead>
+                      <TableHead className="w-24">Status</TableHead>
+                      <TableHead className="w-32 hidden lg:table-cell">Sort Order</TableHead>
+                      <TableHead className="w-24 hidden lg:table-cell">Rules</TableHead>
+                      <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
+                      <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedCollections.map((collection) => (
+                      <TableRow key={collection.id} className="group">
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="relative">
+                            {collection.image ? (
+                              <img
+                                src={collection.image.src}
+                                alt={collection.image.alt || collection.title}
+                                className="h-12 w-12 object-cover rounded-lg border"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center border">
+                                <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="sm:hidden">
+                                {collection.image ? (
+                                  <img
+                                    src={collection.image.src}
+                                    alt={collection.image.alt || collection.title}
+                                    className="h-8 w-8 object-cover rounded border"
+                                  />
+                                ) : (
+                                  <div className="h-8 w-8 bg-muted rounded flex items-center justify-center border">
+                                    <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-sm leading-tight truncate">{collection.title}</div>
+                                <div className="md:hidden text-xs text-muted-foreground font-mono">
+                                  #{collection.handle}
+                                </div>
+                                {collection.body_html && (
+                                  <div className="text-xs text-muted-foreground line-clamp-1" 
+                                       dangerouslySetInnerHTML={{ __html: collection.body_html }} />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                            {collection.handle}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={getPublishedStatus(collection) === 'Published' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {getPublishedStatus(collection)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <Badge variant="outline" className="text-xs">
+                            {collection.sort_order}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {collection.rules.length} rule{collection.rules.length !== 1 ? 's' : ''}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(collection.created_at)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`https://${selectedShop.shopifyDomain}/collections/${collection.handle}`, '_blank')}
+                              title="View collection on store"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-4">
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredCollections.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={handlePageChange}
+                      onItemsPerPageChange={handleItemsPerPageChange}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}

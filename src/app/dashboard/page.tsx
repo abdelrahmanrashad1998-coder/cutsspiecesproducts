@@ -24,21 +24,24 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Manage your Shopify stores, products, and collections</p>
+      <div className="space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage your Shopify stores, products, and collections
+            </p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
             <Link href="/add-product">
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Product
               </Button>
             </Link>
             <Link href="/connect-shop">
-              <Button variant="outline">
+              <Button variant="outline" className="w-full sm:w-auto">
                 <Store className="mr-2 h-4 w-4" />
                 Manage Shops
               </Button>
@@ -47,18 +50,24 @@ export default function DashboardPage() {
         </div>
 
         {/* Shop Selection */}
-        <div className="bg-white p-4 rounded-lg border">
-          <ShopDropdown 
-            selectedShop={selectedShop} 
-            onShopSelect={setSelectedShop} 
-          />
+        <div className="rounded-lg border bg-card p-6">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold">Selected Store</h2>
+            <ShopDropdown 
+              selectedShop={selectedShop} 
+              onShopSelect={setSelectedShop} 
+            />
+          </div>
         </div>
 
-        {/* Products Display */}
-        <ProductsDisplay selectedShop={selectedShop} />
+        {/* Content Grid */}
+        <div className="space-y-8">
+          {/* Products Display */}
+          <ProductsDisplay selectedShop={selectedShop} />
 
-        {/* Collections Display */}
-        <CollectionsDisplay selectedShop={selectedShop} />
+          {/* Collections Display */}
+          <CollectionsDisplay selectedShop={selectedShop} />
+        </div>
       </div>
     </DashboardLayout>
   )

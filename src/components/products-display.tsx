@@ -23,6 +23,7 @@ import {
   Check,
   RefreshCw
 } from 'lucide-react'
+import { DataTablePagination } from '@/components/ui/data-table-pagination'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useAuth, Shop } from '@/contexts/AuthContext'
@@ -64,6 +65,8 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [shopCurrency, setShopCurrency] = useState<string>('USD')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
@@ -74,6 +77,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
       setFilteredProducts([])
       setSearchTerm('')
       setError(null)
+      setCurrentPage(1)
     }
   }, [selectedShop])
 
@@ -84,7 +88,23 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
       product.product_type.toLowerCase().includes(searchTerm.toLowerCase())
     )
     setFilteredProducts(filtered)
+    setCurrentPage(1) // Reset to first page when search changes
   }, [products, searchTerm])
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Reset to first page when changing items per page
+  }
 
   const fetchProducts = async (isRefresh = false) => {
     if (!selectedShop) return
@@ -168,11 +188,14 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Package className="mr-2 h-5 w-5" />
-            Products ({filteredProducts.length})
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Package className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-xl">Products</CardTitle>
+            <Badge variant="secondary" className="ml-2">
+              {filteredProducts.length}
+            </Badge>
           </div>
           {selectedShop && (
             <Button 
@@ -191,7 +214,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
               Refresh
             </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -211,7 +234,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
           <>
             {/* Search */}
             <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Search products by title, vendor, or category..."
                 value={searchTerm}
@@ -222,82 +245,149 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
 
             {/* Products Table */}
             {filteredProducts.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'No products found matching your search.' : 'No products found in this shop.'}
+              <div className="text-center py-12">
+                <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                  {searchTerm ? 'No products found' : 'No products available'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {searchTerm ? 'Try adjusting your search terms.' : 'Add your first product to get started.'}
+                </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Image</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        {product.images.length > 0 ? (
-                          <img
-                            src={product.images[0].src}
-                            alt={product.images[0].alt || product.title}
-                            className="h-12 w-12 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
-                            <Package className="h-6 w-6 text-gray-400" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div className="font-medium">{product.title}</div>
-                          <div className="text-sm text-gray-500">#{product.handle}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{product.vendor}</TableCell>
-                      <TableCell>{product.product_type}</TableCell>
-                      <TableCell>
-                        {product.variants.length > 0 ? formatCurrency(
-                          product.variants[0].price, 
-                          'EGP' // Temporary hardcode for testing
-                        ) : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                          {product.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(product.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(`https://${selectedShop.shopifyDomain}/products/${product.handle}`, '_blank')}
-                            title="View product on store"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                          <Link href={`/edit-product/${product.id}`}>
-                            <Button variant="outline" size="sm" title="Edit product">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </TableCell>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {filteredProducts.length} of {products.length} products
+                  </p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
+                      <TableHead className="min-w-[200px]">Product</TableHead>
+                      <TableHead className="min-w-[120px] hidden md:table-cell">Vendor</TableHead>
+                      <TableHead className="min-w-[120px] hidden lg:table-cell">Category</TableHead>
+                      <TableHead className="w-24 hidden sm:table-cell">Price</TableHead>
+                      <TableHead className="w-24">Status</TableHead>
+                      <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
+                      <TableHead className="w-24">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedProducts.map((product) => (
+                      <TableRow key={product.id} className="group">
+                        <TableCell className="hidden sm:table-cell">
+                          <div className="relative">
+                            {product.images.length > 0 ? (
+                              <img
+                                src={product.images[0].src}
+                                alt={product.images[0].alt || product.title}
+                                className="h-12 w-12 object-cover rounded-lg border"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center border">
+                                <Package className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="sm:hidden">
+                                {product.images.length > 0 ? (
+                                  <img
+                                    src={product.images[0].src}
+                                    alt={product.images[0].alt || product.title}
+                                    className="h-8 w-8 object-cover rounded border"
+                                  />
+                                ) : (
+                                  <div className="h-8 w-8 bg-muted rounded flex items-center justify-center border">
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-sm leading-tight truncate">{product.title}</div>
+                                <div className="text-xs text-muted-foreground font-mono">#{product.handle}</div>
+                                <div className="md:hidden text-xs text-muted-foreground">
+                                  {product.vendor && `${product.vendor} • `}
+                                  {product.variants.length > 0 && formatCurrency(product.variants[0].price, shopCurrency)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="text-sm">{product.vendor || '—'}</span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-sm">{product.product_type || '—'}</span>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <span className="font-medium text-sm">
+                            {product.variants.length > 0 ? formatCurrency(
+                              product.variants[0].price, 
+                              shopCurrency
+                            ) : '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={product.status === 'active' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {product.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(product.created_at)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`https://${selectedShop.shopifyDomain}/products/${product.handle}`, '_blank')}
+                              title="View product on store"
+                              className="h-8 w-8 p-0"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                            <Link href={`/edit-product/${product.id}`}>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                title="Edit product"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-4">
+                    <DataTablePagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredProducts.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={handlePageChange}
+                      onItemsPerPageChange={handleItemsPerPageChange}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
