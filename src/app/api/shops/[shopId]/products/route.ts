@@ -507,6 +507,17 @@ export async function POST(
                 }
               }
             }
+            options {
+              id
+              name
+              position
+              values
+              optionValues {
+                id
+                name
+                hasVariants
+              }
+            }
           }
           userErrors {
             field
@@ -516,6 +527,39 @@ export async function POST(
       }
     `
     
+    // Create product options if we have variants with options
+    const productOptions: any[] = []
+    if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
+      // Check if we have any options defined
+      const hasOptions = cleanedProductData.variants.some((variant: any) => 
+        variant.option1 || variant.option2 || variant.option3
+      )
+      
+      if (hasOptions) {
+        // Create options based on the variants
+        const optionNames = new Set()
+        cleanedProductData.variants.forEach((variant: any) => {
+          if (variant.option1) optionNames.add('Option 1')
+          if (variant.option2) optionNames.add('Option 2') 
+          if (variant.option3) optionNames.add('Option 3')
+        })
+        
+        optionNames.forEach((optionName, index) => {
+          productOptions.push({
+            name: optionName,
+            values: cleanedProductData.variants
+              .map((variant: any) => {
+                if (index === 0 && variant.option1) return { name: variant.option1 }
+                if (index === 1 && variant.option2) return { name: variant.option2 }
+                if (index === 2 && variant.option3) return { name: variant.option3 }
+                return null
+              })
+              .filter(Boolean)
+          })
+        })
+      }
+    }
+
     const graphqlVariables = {
       product: {
         title: cleanedProductData.title,
@@ -523,19 +567,7 @@ export async function POST(
         vendor: cleanedProductData.vendor,
         tags: cleanedProductData.tags ? cleanedProductData.tags.split(',').map((tag: string) => tag.trim()) : [],
         productType: cleanedProductData.product_type || '',
-        variants: cleanedProductData.variants?.map((variant: any) => ({
-          price: variant.price || '0.00',
-          sku: variant.sku || '',
-          inventoryQuantity: variant.inventory_quantity || 0,
-          inventoryManagement: variant.inventory_management || 'shopify',
-          option1: variant.option1 || 'Default',
-          option2: variant.option2 || null,
-          option3: variant.option3 || null
-        })) || [{
-          price: '0.00',
-          option1: 'Default',
-          inventoryManagement: 'shopify'
-        }]
+        ...(productOptions.length > 0 && { productOptions: productOptions })
       }
     }
 
@@ -669,6 +701,71 @@ export async function POST(
     }
 
     console.log('Product created successfully in Shopify with ID:', productId)
+    
+    // If we have multiple variants with different options, create additional variants
+    if (cleanedProductData.variants && cleanedProductData.variants.length > 1) {
+      console.log('Creating additional variants...')
+      try {
+        // Create variants using productVariantsBulkCreate
+        const variantInputs = cleanedProductData.variants.slice(1).map((variant: any) => ({
+          price: variant.price || '0.00',
+          sku: variant.sku || '',
+          inventoryQuantity: variant.inventory_quantity || 0,
+          inventoryManagement: variant.inventory_management || 'shopify',
+          option1: variant.option1 || null,
+          option2: variant.option2 || null,
+          option3: variant.option3 || null
+        }))
+
+        const variantsMutation = `
+          mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+            productVariantsBulkCreate(productId: $productId, variants: $variants) {
+              productVariants {
+                id
+                title
+                price
+                sku
+                inventoryQuantity
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `
+
+        const variantsResponse = await fetch(graphqlUrl, {
+          method: 'POST',
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: variantsMutation,
+            variables: {
+              productId: shopifyProduct.id,
+              variants: variantInputs
+            }
+          }),
+        })
+
+        if (variantsResponse.ok) {
+          const variantsData = await variantsResponse.json()
+          console.log('Additional variants created:', variantsData)
+        } else {
+          console.warn('Failed to create additional variants, but product was created successfully')
+        }
+      } catch (variantError) {
+        console.warn('Error creating additional variants:', variantError)
+        // Don't fail the entire operation if variant creation fails
+      }
+    }
+
     console.log('API used: GraphQL')
 
     const response = NextResponse.json({ 
