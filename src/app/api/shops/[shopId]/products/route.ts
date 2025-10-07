@@ -55,26 +55,39 @@ export async function GET(
     }
 
     // Verify the shop belongs to the user
-    const shopDoc = await db.collection('shops').doc(shopId).get()
+    // Try to find the shop by Firebase document ID first, then by Shopify domain
+    let shopDoc = await db.collection('shops').doc(shopId).get()
+    
     if (!shopDoc.exists) {
-      // Debug: Let's see what shops actually exist for this user
-      console.log(`Shop ${shopId} not found. Checking all shops for user ${userId}...`)
-      const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
-      const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      console.log('Available shops for user:', userShops)
+      // If not found by document ID, try to find by Shopify domain
+      console.log(`Shop ${shopId} not found by document ID. Trying to find by Shopify domain...`)
+      const domainQuery = await db.collection('shops').where('shopifyDomain', '==', shopId).where('userId', '==', userId).get()
       
-      const errorResponse = NextResponse.json(
-        { 
-          error: 'Shop not found',
-          debug: {
-            requestedShopId: shopId,
-            userId: userId,
-            availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain }))
-          }
-        },
-        { status: 404 }
-      )
-      return addCorsHeaders(errorResponse)
+      if (domainQuery.docs.length > 0) {
+        // Found by domain, use the first match
+        shopDoc = domainQuery.docs[0]
+        console.log('Found shop by domain:', shopDoc.id)
+      } else {
+        // Debug: Let's see what shops actually exist for this user
+        console.log(`Shop ${shopId} not found by ID or domain. Checking all shops for user ${userId}...`)
+        const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
+        const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        console.log('Available shops for user:', userShops)
+        
+        const errorResponse = NextResponse.json(
+          { 
+            error: 'Shop not found',
+            debug: {
+              requestedShopId: shopId,
+              userId: userId,
+              availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain })),
+              searchMethod: 'tried both document ID and domain lookup'
+            }
+          },
+          { status: 404 }
+        )
+        return addCorsHeaders(errorResponse)
+      }
     }
 
     const shopData = shopDoc.data()
@@ -374,14 +387,26 @@ export async function POST(
       return addCorsHeaders(response)
     }
     console.log('Step 6: Fetching shop document...')
-    const shopDoc = await db.collection('shops').doc(shopId).get()
+    // Try to find the shop by Firebase document ID first, then by Shopify domain
+    let shopDoc = await db.collection('shops').doc(shopId).get()
     
     console.log('Step 7: Checking if shop exists...')
     if (!shopDoc.exists) {
-      console.log('Shop not found for ID:', shopId)
+      console.log('Shop not found by document ID:', shopId)
       
-      // Debug: Let's see what shops actually exist for this user
-      console.log(`Shop ${shopId} not found. Checking all shops for user ${userId}...`)
+      // If not found by document ID, try to find by Shopify domain
+      console.log(`Shop ${shopId} not found by document ID. Trying to find by Shopify domain...`)
+      const domainQuery = await db.collection('shops').where('shopifyDomain', '==', shopId).where('userId', '==', userId).get()
+      
+      if (domainQuery.docs.length > 0) {
+        // Found by domain, use the first match
+        shopDoc = domainQuery.docs[0]
+        console.log('Found shop by domain:', shopDoc.id)
+      } else {
+        console.log('Shop not found by ID or domain:', shopId)
+        
+        // Debug: Let's see what shops actually exist for this user
+        console.log(`Shop ${shopId} not found by ID or domain. Checking all shops for user ${userId}...`)
       try {
         const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
         const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -415,6 +440,7 @@ export async function POST(
           { status: 404 }
         )
         return addCorsHeaders(response)
+      }
       }
     }
 
