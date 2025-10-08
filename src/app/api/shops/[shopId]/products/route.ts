@@ -100,7 +100,7 @@ export async function GET(
     }
 
     // Fetch products from Shopify using the shop's credentials
-    const shopifyDomain = shopData.shopifyDomain
+    let shopifyDomain = shopData.shopifyDomain
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
@@ -111,8 +111,14 @@ export async function GET(
       return addCorsHeaders(errorResponse)
     }
 
+    // Convert custom domain to myshopify domain if needed
+    // This ensures we use the development link (.myshopify.com) for API calls
+    if (shopifyDomain === 'cutts-pieces.com') {
+      shopifyDomain = 'v4b0fh-da.myshopify.com'
+    }
+
     // Make request to Shopify API
-    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2025-07/products.json`, {
+    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2025-10/products.json`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
@@ -133,7 +139,7 @@ export async function GET(
 
     // Use GraphQL to get products with collections data
     try {
-      const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
+      const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
       const graphqlQuery = {
         query: `
           query getProducts($first: Int!) {
@@ -346,21 +352,27 @@ export async function POST(
     console.log('Step 4: Validating required fields...')
     console.log('Product data received:', {
       title: productData.title,
-      hasBodyHtml: !!productData.body_html,
+      hasDescriptionHtml: !!productData.descriptionHtml,
+      hasBodyHtml: !!productData.body_html, // Support legacy format
       vendor: productData.vendor,
       tags: productData.tags,
+      productOptions: productData.productOptions,
       variantsCount: productData.variants?.length || 0,
       imagesCount: productData.images?.length || 0,
       variants: productData.variants
     })
     
-    if (!productData.title || !productData.body_html) {
-      console.log('Validation failed: missing title or body_html')
+    // Support both new descriptionHtml and legacy body_html
+    const description = productData.descriptionHtml || productData.body_html
+    
+    if (!productData.title || !description) {
+      console.log('Validation failed: missing title or description')
       const response = NextResponse.json(
         { 
           error: 'Title and description are required',
           received: {
             title: productData.title,
+            descriptionHtml: productData.descriptionHtml ? 'present' : 'missing',
             body_html: productData.body_html ? 'present' : 'missing'
           }
         },
@@ -501,7 +513,7 @@ export async function POST(
 
     // Get shop credentials
     console.log('Step 9: Getting shop credentials...')
-    const shopifyDomain = shopData.shopifyDomain
+    let shopifyDomain = shopData.shopifyDomain
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
@@ -513,10 +525,18 @@ export async function POST(
       return addCorsHeaders(response)
     }
 
+    // Convert custom domain to myshopify domain if needed
+    // This ensures we use the development link (.myshopify.com) for API calls
+    if (shopifyDomain === 'cutts-pieces.com') {
+      shopifyDomain = 'v4b0fh-da.myshopify.com'
+    }
+    console.log('Using Shopify domain for API calls:', shopifyDomain)
+
     // Clean up the product data for Shopify API - replace null values with defaults
     console.log('Step 10: Cleaning product data...')
     const cleanedProductData = {
       ...productData,
+      description: description, // Use the validated description
       variants: productData.variants?.map((variant: any) => {
         const cleanedVariant = { ...variant }
         // Replace null values with appropriate defaults
@@ -539,13 +559,70 @@ export async function POST(
 
     // Create product in Shopify using GraphQL API
     console.log('Step 11: Setting up GraphQL API...')
-    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
     console.log('GraphQL URL:', graphqlUrl)
     
-    // Build optimized GraphQL mutation
+    // Use productOptions from payload if provided, otherwise build from variants
+    let productOptions: any[] = []
+    
+    if (cleanedProductData.productOptions && Array.isArray(cleanedProductData.productOptions)) {
+      // Use productOptions directly from the payload (GraphQL format)
+      productOptions = cleanedProductData.productOptions
+      console.log('Using productOptions from payload:', JSON.stringify(productOptions, null, 2))
+    } else if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
+      // Build options from variants (legacy format)
+      // All variants use option1 which represents "Size"
+      const sizeValues = new Set<string>()
+      
+      cleanedProductData.variants.forEach((variant: any) => {
+        if (variant.option1 && variant.option1.trim() && variant.option1 !== 'Default') {
+          sizeValues.add(variant.option1.trim())
+        }
+      })
+      
+      // Convert to productOptions format: [{name: "Size", values: [{name: "Small"}, {name: "Large"}]}]
+      if (sizeValues.size > 0) {
+        const optionValues = Array.from(sizeValues)
+          .filter((value: string) => value && value.trim())
+          .map((value: string) => ({ name: value.trim() }))
+        
+        if (optionValues.length > 0) {
+          productOptions.push({
+            name: 'Size',
+            values: optionValues
+          })
+        }
+      }
+      
+      console.log('Built product options from variants:', JSON.stringify(productOptions, null, 2))
+    }
+
+    // Escape strings for GraphQL
+    const escapeGraphQL = (str: string) => str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+    
+    // Build productOptions string for inline mutation
+    const productOptionsString = productOptions.length > 0 
+      ? `, productOptions: [${productOptions.map(opt => 
+          `{name: "${escapeGraphQL(opt.name)}", values: [${opt.values.map((v: any) => `{name: "${escapeGraphQL(v.name)}"}`).join(', ')}]}`
+        ).join(', ')}]`
+      : ''
+    
+    // Handle tags - convert array to comma-separated string if needed
+    const tagsString = Array.isArray(cleanedProductData.tags) 
+      ? cleanedProductData.tags.join(', ')
+      : cleanedProductData.tags
+    
+    // Build inline GraphQL mutation (like the example)
     const graphqlMutation = `
-      mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
-        productCreate(product: $product, media: $media) {
+      mutation {
+        productCreate(product: {
+          title: "${escapeGraphQL(cleanedProductData.title)}"
+          ${cleanedProductData.description ? `descriptionHtml: "${escapeGraphQL(cleanedProductData.description)}"` : ''}
+          ${cleanedProductData.vendor ? `vendor: "${escapeGraphQL(cleanedProductData.vendor)}"` : ''}
+          ${cleanedProductData.product_type ? `productType: "${escapeGraphQL(cleanedProductData.product_type)}"` : ''}
+          ${tagsString ? `tags: "${escapeGraphQL(tagsString)}"` : ''}
+          ${productOptionsString}
+        }) {
           product {
             id
             title
@@ -555,17 +632,17 @@ export async function POST(
             vendor
             productType
             tags
-            media(first: 10) {
-              nodes {
+            options {
+              id
+              name
+              position
+              optionValues {
                 id
-                alt
-                mediaContentType
-                preview {
-                  status
-                }
+                name
+                hasVariants
               }
             }
-            variants(first: 10) {
+            variants(first: 100) {
               nodes {
                 id
                 title
@@ -578,17 +655,6 @@ export async function POST(
                 }
               }
             }
-            options {
-              id
-              name
-              position
-              values
-              optionValues {
-                id
-                name
-                hasVariants
-              }
-            }
           }
           userErrors {
             field
@@ -598,112 +664,35 @@ export async function POST(
       }
     `
     
-    // Create product options if we have variants with options
-    const productOptions: any[] = []
-    if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
-      // Check if we have any options defined
-      const hasOptions = cleanedProductData.variants.some((variant: any) => 
-        variant.option1 || variant.option2 || variant.option3
-      )
-      
-      if (hasOptions) {
-        // Create options based on the variants - use more meaningful names
-        const optionMap = new Map()
-        
-        cleanedProductData.variants.forEach((variant: any) => {
-          if (variant.option1 && variant.option1.trim()) {
-            if (!optionMap.has('Size')) optionMap.set('Size', new Set())
-            optionMap.get('Size').add(variant.option1.trim())
-          }
-          if (variant.option2 && variant.option2.trim()) {
-            if (!optionMap.has('Color')) optionMap.set('Color', new Set())
-            optionMap.get('Color').add(variant.option2.trim())
-          }
-          if (variant.option3 && variant.option3.trim()) {
-            if (!optionMap.has('Material')) optionMap.set('Material', new Set())
-            optionMap.get('Material').add(variant.option3.trim())
-          }
-        })
-        
-        // Convert to product options format
-        optionMap.forEach((values, optionName) => {
-          if (values.size > 0) {
-            const optionValues = Array.from(values)
-              .filter((value: any) => value && typeof value === 'string' && value.trim()) // Filter out empty values
-              .map((value: any) => ({ name: (value as string).trim() }))
-            
-            // Only add option if we have valid values
-            if (optionValues.length > 0) {
-              productOptions.push({
-                name: optionName,
-                values: optionValues
-              })
-            }
-          }
-        })
-        
-        console.log('Created product options:', productOptions)
-      }
-    }
-
-    // If no valid options were created, create a simple default option
-    if (productOptions.length === 0 && cleanedProductData.variants && cleanedProductData.variants.length > 0) {
-      const firstVariant = cleanedProductData.variants[0]
-      if (firstVariant.price && firstVariant.price !== '0.00') {
-        // Create a simple default option for single variant products
-        productOptions.push({
-          name: 'Default',
-          values: [{ name: 'Default' }]
-        })
-        console.log('Created default option for single variant product')
-      }
-    }
-
-    const graphqlVariables = {
-      product: {
-        title: cleanedProductData.title,
-        descriptionHtml: cleanedProductData.body_html,
-        vendor: cleanedProductData.vendor,
-        tags: cleanedProductData.tags ? cleanedProductData.tags.split(',').map((tag: string) => tag.trim()) : [],
-        productType: cleanedProductData.product_type || '',
-        ...(productOptions.length > 0 && { productOptions: productOptions })
-      }
-    }
-
-    // Handle media separately if images exist
-    let mediaVariables = null
-    if (cleanedProductData.images && cleanedProductData.images.length > 0) {
-      mediaVariables = {
-        media: cleanedProductData.images.map((img: any) => ({
-          originalSource: img.src,
-          alt: img.alt || cleanedProductData.title,
-          mediaContentType: 'IMAGE'
-        }))
-      }
-    }
-
     console.log('Creating product in Shopify:', productData.title)
-    console.log('GraphQL variables:', JSON.stringify(graphqlVariables, null, 2))
-    if (mediaVariables) {
-      console.log('Media variables:', JSON.stringify(mediaVariables, null, 2))
+    console.log('GraphQL mutation:', graphqlMutation)
+    
+    // Prepare request details
+    const requestHeaders = {
+      'X-Shopify-Access-Token': accessToken,
+      'Content-Type': 'application/json',
+    }
+    const requestBody = {
+      query: graphqlMutation
     }
     
-    // Combine variables for the request
-    const requestVariables: any = { ...graphqlVariables }
-    if (mediaVariables) {
-      requestVariables.media = mediaVariables.media
-    }
+    // Log the complete request
+    console.log('\n========== PRODUCT CREATE REQUEST ==========')
+    console.log('URL:', graphqlUrl)
+    console.log('Method: POST')
+    console.log('\nHeaders:')
+    console.log(JSON.stringify({
+      ...requestHeaders,
+      'X-Shopify-Access-Token': accessToken.substring(0, 10) + '...' // Only show first 10 chars for security
+    }, null, 2))
+    console.log('\nBody:')
+    console.log(JSON.stringify(requestBody, null, 2))
+    console.log('==========================================\n')
     
     const shopifyResponse = await fetch(graphqlUrl, {
       method: 'POST',
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: graphqlMutation,
-        variables: requestVariables
-      }),
+      headers: requestHeaders,
+      body: JSON.stringify(requestBody),
     })
     
     // Ensure we have a response
@@ -782,10 +771,15 @@ export async function POST(
       product_type: shopifyProduct.productType,
       tags: shopifyProduct.tags.join(', '),
       status: shopifyProduct.status.toLowerCase(),
-      images: shopifyProduct.media?.nodes?.map((media: any) => ({
-        id: parseInt(media.id.split('/').pop()) || 0,
-        src: media.originalSource || '', // Note: This might need to be fetched separately for the actual URL
-        alt: media.alt || ''
+      options: shopifyProduct.options?.map((option: any) => ({
+        id: parseInt(option.id.split('/').pop()) || 0,
+        name: option.name,
+        position: option.position,
+        optionValues: option.optionValues.map((optionValue: any) => ({
+          id: parseInt(optionValue.id.split('/').pop()) || 0,
+          name: optionValue.name,
+          hasVariants: optionValue.hasVariants
+        }))
       })) || [],
       variants: shopifyProduct.variants.nodes.map((variant: any) => ({
         id: parseInt(variant.id.split('/').pop()) || 0,
@@ -793,33 +787,28 @@ export async function POST(
         price: variant.price,
         sku: variant.sku,
         inventory_quantity: variant.inventoryQuantity,
-        option1: variant.selectedOptions[0]?.value || 'Default',
+        option1: variant.selectedOptions[0]?.value || null,
         option2: variant.selectedOptions[1]?.value || null,
         option3: variant.selectedOptions[2]?.value || null
       }))
     }
 
     console.log('Product created successfully in Shopify with ID:', productId)
+    console.log('Product created with options:', JSON.stringify(shopifyProduct.options, null, 2))
     
-    // Update the initial variant's price if we have variant data
-    if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
-      const firstVariant = cleanedProductData.variants[0]
-      if (firstVariant.price && firstVariant.price !== '0.00') {
-        console.log('Updating initial variant price to:', firstVariant.price)
-        
-        try {
-          // Update the first variant's price using bulk update
-          const variantUpdateMutation = `
-            mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-              productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-                productVariants {
-                  id
-                  title
-                  price
-                  sku
-                  inventoryQuantity
-                }
-                userErrors {
+    // Step 1: Add images if provided
+    if (cleanedProductData.images && cleanedProductData.images.length > 0) {
+      console.log('Adding images to product...')
+      try {
+        const imagesMutation = `
+          mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+            productCreateMedia(productId: $productId, media: $media) {
+              media {
+                id
+                alt
+                mediaContentType
+              }
+              mediaUserErrors {
                   field
                   message
                 }
@@ -827,65 +816,80 @@ export async function POST(
             }
           `
 
-          const variantUpdateResponse = await fetch(graphqlUrl, {
+        const imagesResponse = await fetch(graphqlUrl, {
             method: 'POST',
             headers: {
               'X-Shopify-Access-Token': accessToken,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              query: variantUpdateMutation,
+            query: imagesMutation,
               variables: {
                 productId: shopifyProduct.id,
-                variants: [{
-                  id: shopifyProduct.variants.nodes[0].id,
-                  price: firstVariant.price,
-                  sku: firstVariant.sku || '',
-                  inventoryQuantity: firstVariant.inventory_quantity || 0
-                }]
+              media: cleanedProductData.images.map((img: any) => ({
+                originalSource: img.src,
+                alt: img.alt || cleanedProductData.title,
+                mediaContentType: 'IMAGE'
+              }))
               }
             }),
           })
 
-          if (variantUpdateResponse.ok) {
-            const variantUpdateData = await variantUpdateResponse.json()
-            console.log('Variant price updated successfully:', variantUpdateData)
-            
-            // Update the final product data with the correct price
-            if (variantUpdateData.data?.productVariantsBulkUpdate?.productVariants?.[0]) {
-              finalProductData.variants[0].price = variantUpdateData.data.productVariantsBulkUpdate.productVariants[0].price
-              console.log('Updated final product data with correct price:', finalProductData.variants[0].price)
-            }
+        if (imagesResponse.ok) {
+          const imagesData = await imagesResponse.json()
+          console.log('Images added successfully:', imagesData)
           } else {
-            console.warn('Failed to update variant price, but product was created successfully')
-          }
-        } catch (variantUpdateError) {
-          console.warn('Error updating variant price:', variantUpdateError)
-          // Fallback: Update the final product data with the intended price
-          finalProductData.variants[0].price = firstVariant.price
-          console.log('Updated final product data with fallback price:', firstVariant.price)
+          console.warn('Failed to add images')
         }
+      } catch (imageError) {
+        console.warn('Error adding images:', imageError)
       }
     }
     
-    // If we have multiple variants with different options, create additional variants
-    if (cleanedProductData.variants && cleanedProductData.variants.length > 1) {
-      console.log('Creating additional variants...')
+    // Step 2: Create/Update variants with prices using productVariantsBulkCreate
+    if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
+      console.log('\n========== CREATING VARIANTS WITH PRICES ==========')
+      console.log('Number of input variants:', cleanedProductData.variants.length)
+      console.log('\nInput variants with prices:', JSON.stringify(cleanedProductData.variants.map((v: any) => ({
+        option1: v.option1,
+        price: v.price,
+        sku: v.sku,
+        inventory_quantity: v.inventory_quantity
+      })), null, 2))
+      
       try {
-        // Create variants using productVariantsBulkCreate
-        const variantInputs = cleanedProductData.variants.slice(1).map((variant: any) => ({
-          price: variant.price || '0.00',
-          sku: variant.sku || '',
-          inventoryQuantity: variant.inventory_quantity || 0,
-          inventoryManagement: variant.inventory_management || 'shopify',
-          option1: variant.option1 || null,
-          option2: variant.option2 || null,
-          option3: variant.option3 || null
-        }))
-
-        const variantsMutation = `
-          mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-            productVariantsBulkCreate(productId: $productId, variants: $variants) {
+        // Build variants array for bulk create
+        const variantsInput = cleanedProductData.variants.map((inputVariant: any) => {
+          const variantInput: any = {
+            price: inputVariant.price || '0.00'
+          }
+          
+          // Add SKU if provided
+          if (inputVariant.sku) {
+            variantInput.sku = inputVariant.sku
+          }
+          
+          // Note: Inventory management requires a valid location ID
+          // For now, we'll skip inventory setting and let Shopify use defaults
+          // TODO: Get the shop's default location and set inventory there
+          
+          // Add option values - for single Size option, just use option1
+          variantInput.optionValues = []
+          if (inputVariant.option1) {
+            variantInput.optionValues.push({
+              optionName: 'Size',
+              name: inputVariant.option1
+            })
+          }
+          
+          return variantInput
+        })
+        
+        console.log('Variants input for bulk create:', JSON.stringify(variantsInput, null, 2))
+        
+        const variantsBulkCreateMutation = `
+          mutation productVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!, $strategy: ProductVariantsBulkCreateStrategy) {
+            productVariantsBulkCreate(productId: $productId, variants: $variants, strategy: $strategy) {
               productVariants {
                 id
                 title
@@ -912,23 +916,55 @@ export async function POST(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            query: variantsMutation,
+            query: variantsBulkCreateMutation,
             variables: {
               productId: shopifyProduct.id,
-              variants: variantInputs
+              variants: variantsInput,
+              strategy: 'REMOVE_STANDALONE_VARIANT' // Replace the default variant created by productCreate
             }
           }),
         })
 
         if (variantsResponse.ok) {
           const variantsData = await variantsResponse.json()
-          console.log('Additional variants created:', variantsData)
+          console.log('Variants bulk create response:', JSON.stringify(variantsData, null, 2))
+          
+          if (variantsData.errors) {
+            console.error('❌ GraphQL errors:', variantsData.errors)
+          } else if (variantsData.data?.productVariantsBulkCreate?.userErrors?.length > 0) {
+            console.error('❌ Variant creation errors:', variantsData.data.productVariantsBulkCreate.userErrors)
+          } else if (variantsData.data?.productVariantsBulkCreate?.productVariants) {
+            const createdVariants = variantsData.data.productVariantsBulkCreate.productVariants
+            console.log(`✅ ${createdVariants.length} variants created successfully:`)
+            createdVariants.forEach((v: any) => {
+              console.log(`   - ${v.title}: $${v.price} (SKU: ${v.sku || 'N/A'})`)
+            })
+            
+            // Update finalProductData with new variants
+            finalProductData.variants = createdVariants.map((variant: any) => ({
+              id: parseInt(variant.id.split('/').pop()) || 0,
+              title: variant.title,
+              price: variant.price,
+              sku: variant.sku,
+              inventory_quantity: variant.inventoryQuantity,
+              option1: variant.selectedOptions[0]?.value || null,
+              option2: variant.selectedOptions[1]?.value || null,
+              option3: variant.selectedOptions[2]?.value || null
+            }))
+          } else {
+            console.warn('⚠️ Unexpected response structure:', variantsData)
+          }
         } else {
-          console.warn('Failed to create additional variants, but product was created successfully')
+          const errorText = await variantsResponse.text()
+          console.error(`❌ Failed to create variants`)
+          console.error('Response status:', variantsResponse.status)
+          console.error('Response body:', errorText)
         }
+        
+        console.log('\n========== VARIANT CREATION COMPLETE ==========\n')
       } catch (variantError) {
-        console.warn('Error creating additional variants:', variantError)
-        // Don't fail the entire operation if variant creation fails
+        console.error('❌ Error creating variants:', variantError)
+        console.error('Error stack:', variantError instanceof Error ? variantError.stack : 'No stack trace')
       }
     }
 

@@ -337,34 +337,45 @@ export default function AddProductPage() {
       }
 
       // Create product
+      // Build productOptions from variants in GraphQL format
+      // All variants use option1 which represents "Size"
+      const sizeValues = new Set<string>()
+      
+      variants.forEach(variant => {
+        if (variant.option1 && variant.option1.trim()) {
+          sizeValues.add(variant.option1.trim())
+        }
+      })
+      
+      const productOptions: Array<{ name: string; values: Array<{ name: string }> }> = []
+      
+      if (sizeValues.size > 0) {
+        const optionValues = Array.from(sizeValues)
+          .filter(value => value && value.trim())
+          .map(value => ({ name: value.trim() }))
+        
+        if (optionValues.length > 0) {
+          productOptions.push({
+            name: 'Size',
+            values: optionValues
+          })
+        }
+      }
+      
       const productPayload = {
         title: productData.title,
-        body_html: productData.description,
+        descriptionHtml: productData.description,
         vendor: productData.vendor || 'Default Vendor',
-        tags: productData.tags,
-        variants: variants.map(variant => {
-          const variantData: any = {
-            price: variant.price
-          }
-          
-          // Only add options if they have values
-          if (variant.option1 && variant.option1.trim()) {
-            variantData.option1 = variant.option1
-          }
-          if (variant.option2 && variant.option2.trim()) {
-            variantData.option2 = variant.option2
-          }
-          if (variant.option3 && variant.option3.trim()) {
-            variantData.option3 = variant.option3
-          }
-          
-          // Only add inventory_management if tracking is enabled
-          if (variant.inventory_tracking) {
-            variantData.inventory_management = 'shopify'
-          }
-          
-          return variantData
-        }),
+        tags: productData.tags.split(',').map(t => t.trim()).filter(t => t),
+        productOptions: productOptions,
+        variants: variants.map(variant => ({
+          price: variant.price,
+          option1: variant.option1 || null,
+          option2: variant.option2 || null,
+          option3: variant.option3 || null,
+          inventory_tracking: variant.inventory_tracking,
+          inventory_management: variant.inventory_tracking ? 'shopify' : null
+        })),
         images: finalImageUrls.map(url => ({ src: url }))
       }
 
