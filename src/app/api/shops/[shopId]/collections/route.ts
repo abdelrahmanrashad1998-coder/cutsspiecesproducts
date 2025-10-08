@@ -140,7 +140,7 @@ export async function GET(
     }
 
     // Use GraphQL to fetch collections (more reliable than REST collection_listings)
-    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
     
     const graphqlQuery = {
       query: `
@@ -152,6 +152,7 @@ export async function GET(
                 title
                 handle
                 updatedAt
+                sortOrder
                 description
                 image {
                   url
@@ -224,7 +225,7 @@ export async function GET(
         body_html: edge.node.description || '',
         handle: edge.node.handle,
         published_at: null, // GraphQL doesn't provide this field
-        sort_order: 'manual', // Default value
+        sort_order: edge.node.sortOrder || 'manual', // Use sortOrder from GraphQL
         template_suffix: null,
         disjunctive: false, // Default value
         rules: [], // Empty array since GraphQL doesn't provide rules

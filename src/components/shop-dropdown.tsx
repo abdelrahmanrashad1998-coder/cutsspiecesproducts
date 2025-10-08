@@ -74,7 +74,7 @@ export function ShopDropdown({ selectedShop, onShopSelect }: ShopDropdownProps) 
     try {
       // Test the shop connection by fetching a small amount of data
       const token = await firebaseUser?.getIdToken()
-      const response = await fetch(`/api/shops/${shop.shopifyDomain}/products?limit=1`, {
+      const response = await fetch(`/api/shops/${shop.id}/products?limit=1`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

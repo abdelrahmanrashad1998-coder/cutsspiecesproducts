@@ -108,7 +108,7 @@ export default function EditProductPage() {
     try {
       const token = await firebaseUser.getIdToken()
       
-      const response = await fetch(`/api/shops/${selectedShop.shopifyDomain}/collections`, {
+      const response = await fetch(`/api/shops/${selectedShop.id}/collections`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -387,7 +387,7 @@ export default function EditProductPage() {
             
             if (selectedCollection && selectedCollection !== "none") {
               // Add product to the new collection
-              const collectionResponse = await fetch(`/api/shops/${selectedShop.shopifyDomain}/collections/${selectedCollection}/products`, {
+              const collectionResponse = await fetch(`/api/shops/${selectedShop.id}/collections/${selectedCollection}/products`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${await firebaseUser.getIdToken()}`,
