@@ -118,7 +118,9 @@ export async function POST(
           collection {
             id
             title
-            productsCount
+            productsCount {
+              count
+            }
           }
           userErrors {
             field
