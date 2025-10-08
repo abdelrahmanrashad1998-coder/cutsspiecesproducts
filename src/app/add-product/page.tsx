@@ -437,13 +437,29 @@ export default function AddProductPage() {
             console.log('Collection response status:', collectionResponse.status)
 
             if (collectionResponse.ok) {
-              const collectionData = await collectionResponse.json()
-              console.log('Collection added successfully:', collectionData)
-              toast.success('Product created and added to collection successfully!')
+              try {
+                const collectionData = await collectionResponse.json()
+                console.log('Collection added successfully:', collectionData)
+                toast.success('Product created and added to collection successfully!')
+              } catch (parseError) {
+                console.error('Failed to parse success response:', parseError)
+                toast.success('Product created and possibly added to collection')
+              }
             } else {
-              const errorData = await collectionResponse.json()
+              console.error('Collection response not OK. Status:', collectionResponse.status)
+              const responseText = await collectionResponse.text()
+              console.error('Response text:', responseText)
+              
+              let errorData = {}
+              try {
+                errorData = JSON.parse(responseText)
+              } catch (e) {
+                console.error('Failed to parse error response as JSON')
+                errorData = { error: 'Unknown error', rawResponse: responseText }
+              }
+              
               console.error('Failed to add to collection:', errorData)
-              toast.success('Product created successfully, but failed to add to collection')
+              toast.error(`Product created but failed to add to collection: ${errorData.error || 'Unknown error'}`)
             }
           } catch (collectionError) {
             toast.success('Product created successfully, but failed to add to collection')
