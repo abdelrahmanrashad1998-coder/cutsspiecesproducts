@@ -412,8 +412,17 @@ export default function AddProductPage() {
         console.log('Product created successfully:', productData)
         
         // Add product to collection if one is selected
-        if (selectedCollection && selectedCollection !== "none" && productData.product?.id) {
+        if (selectedCollection && selectedCollection !== "none" && (productData.product?.gid || productData.product?.id)) {
           try {
+            // Use GID if available, otherwise fall back to integer ID
+            const productIdToUse = productData.product.gid || productData.product.id
+            
+            console.log('Adding product to collection:', {
+              productId: productIdToUse,
+              collectionId: selectedCollection,
+              shopId: selectedShop.id
+            })
+            
             const collectionResponse = await fetch(`/api/shops/${selectedShop.id}/collections/${selectedCollection}/products`, {
               method: 'POST',
               headers: {
@@ -421,13 +430,19 @@ export default function AddProductPage() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                productId: productData.product.id
+                productId: productIdToUse
               }),
             })
+            
+            console.log('Collection response status:', collectionResponse.status)
 
             if (collectionResponse.ok) {
+              const collectionData = await collectionResponse.json()
+              console.log('Collection added successfully:', collectionData)
               toast.success('Product created and added to collection successfully!')
             } else {
+              const errorData = await collectionResponse.json()
+              console.error('Failed to add to collection:', errorData)
               toast.success('Product created successfully, but failed to add to collection')
             }
           } catch (collectionError) {

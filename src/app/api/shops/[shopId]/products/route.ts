@@ -764,6 +764,7 @@ export async function POST(
     const productId = parseInt(shopifyProduct.id.split('/').pop()) || 0
     const finalProductData = {
       id: productId,
+      gid: shopifyProduct.id, // Include full GID for GraphQL operations
       title: shopifyProduct.title,
       handle: shopifyProduct.handle,
       body_html: shopifyProduct.descriptionHtml,

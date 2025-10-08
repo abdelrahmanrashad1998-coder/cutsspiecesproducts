@@ -75,7 +75,7 @@ export async function POST(
     }
 
     // Get shop credentials
-    const shopifyDomain = shopData.shopifyDomain
+    let shopifyDomain = shopData.shopifyDomain
     const accessToken = shopData.shopifyAccessToken
 
     if (!shopifyDomain || !accessToken) {
@@ -86,46 +86,121 @@ export async function POST(
       return addCorsHeaders(response)
     }
 
-    // Add product to collection using Shopify API
-    // Use the correct Shopify API endpoint for adding products to collections
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2025-07/collects.json`
+    // Convert custom domain to myshopify domain if needed
+    if (shopifyDomain === 'cutts-pieces.com') {
+      shopifyDomain = 'v4b0fh-da.myshopify.com'
+    }
+
+    // Convert product ID to GID format if it's a plain integer
+    let productGid = productId
+    if (!productId.startsWith('gid://')) {
+      productGid = `gid://shopify/Product/${productId}`
+    }
+
+    // Convert collection ID to GID format if it's a plain integer
+    let collectionGid = collectionId
+    if (!collectionId.startsWith('gid://')) {
+      collectionGid = `gid://shopify/Collection/${collectionId}`
+    }
+
+    // Add product to collection using GraphQL API
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
     
-    console.log('Adding product to collection:', { productId, collectionId, shopifyUrl })
+    console.log('========== ADDING PRODUCT TO COLLECTION ==========')
+    console.log('Product GID:', productGid)
+    console.log('Collection GID:', collectionGid)
+    console.log('GraphQL URL:', graphqlUrl)
+    console.log('==================================================')
     
-    const shopifyResponse = await fetch(shopifyUrl, {
+    const collectionMutation = `
+      mutation collectionAddProducts($id: ID!, $productIds: [ID!]!) {
+        collectionAddProducts(id: $id, productIds: $productIds) {
+          collection {
+            id
+            title
+            productsCount
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `
+    
+    const requestBody = {
+      query: collectionMutation,
+      variables: {
+        id: collectionGid,
+        productIds: [productGid]
+      }
+    }
+    
+    console.log('Request body:', JSON.stringify(requestBody, null, 2))
+    
+    const shopifyResponse = await fetch(graphqlUrl, {
       method: 'POST',
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        collect: {
-          product_id: parseInt(productId),
-          collection_id: parseInt(collectionId)
-        }
-      }),
+      body: JSON.stringify(requestBody),
     })
     
     console.log('Collection API response status:', shopifyResponse.status)
+    console.log('Collection API response headers:', Object.fromEntries(shopifyResponse.headers.entries()))
 
     if (!shopifyResponse.ok) {
       const errorData = await shopifyResponse.text()
-      console.error('Shopify collection API error:', shopifyResponse.status, errorData)
+      console.error('❌ Shopify collection API HTTP error:', shopifyResponse.status, errorData)
       
       const errorResponse = NextResponse.json(
-        { error: 'Failed to add product to collection', details: errorData },
+        { 
+          error: 'Failed to add product to collection', 
+          details: errorData,
+          statusCode: shopifyResponse.status,
+          request: {
+            collectionGid,
+            productGid,
+            graphqlUrl
+          }
+        },
         { status: shopifyResponse.status }
       )
       return addCorsHeaders(errorResponse)
     }
 
     const data = await shopifyResponse.json()
-    console.log('Product added to collection successfully:', data)
+    console.log('✅ Collection API response:', JSON.stringify(data, null, 2))
+    
+    // Check for GraphQL errors
+    if (data.errors) {
+      console.error('GraphQL errors:', data.errors)
+      const errorResponse = NextResponse.json(
+        { error: 'Failed to add product to collection', details: data.errors },
+        { status: 400 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    // Check for user errors
+    const result = data.data?.collectionAddProducts
+    if (result?.userErrors && result.userErrors.length > 0) {
+      console.error('User errors:', result.userErrors)
+      const errorResponse = NextResponse.json(
+        { error: 'Failed to add product to collection', details: result.userErrors },
+        { status: 400 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+    
+    console.log('Product added to collection successfully:', result?.collection)
     
     const response = NextResponse.json({ 
       success: true,
       message: 'Product added to collection successfully',
-      data
+      collection: result?.collection,
+      data: result
     })
     return addCorsHeaders(response)
 
