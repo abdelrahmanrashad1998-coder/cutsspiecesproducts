@@ -118,7 +118,7 @@ export async function GET(
       return addCorsHeaders(response)
     }
 
-    const shopInfoUrl = `https://${shopifyDomain}/admin/api/2024-01/shop.json`
+    const shopInfoUrl = `https://${shopifyDomain}/admin/api/2025-07/shop.json`
     
     try {
       const shopResponse = await fetch(shopInfoUrl, {
@@ -140,7 +140,7 @@ export async function GET(
     }
 
     // Use GraphQL to fetch collections (more reliable than REST collection_listings)
-    const graphqlUrl = `https://${shopifyDomain}/admin/api/2023-10/graphql.json`
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
     
     const graphqlQuery = {
       query: `

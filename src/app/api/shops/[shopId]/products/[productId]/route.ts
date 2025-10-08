@@ -101,7 +101,7 @@ export async function PUT(
     console.log('Sending to Shopify:', JSON.stringify(shopifyProductData, null, 2))
 
     // Update product in Shopify
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products/${productId}.json`
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2025-07/products/${productId}.json`
     const shopifyResponse = await fetch(shopifyUrl, {
       method: 'PUT',
       headers: {
@@ -228,7 +228,7 @@ export async function GET(
     }
 
     // First try the REST API to get the product, then use GraphQL for collections if needed
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products/${productId}.json`
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2025-07/products/${productId}.json`
     const shopifyResponse = await fetch(shopifyUrl, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -250,7 +250,7 @@ export async function GET(
     const product = productData.product
 
     // Now get collections using GraphQL
-    const graphqlUrl = `https://${shopifyDomain}/admin/api/2023-10/graphql.json`
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
     
     const graphqlQuery = {
       query: `

@@ -88,7 +88,7 @@ export async function POST(
 
     // Add product to collection using Shopify API
     // Use the correct Shopify API endpoint for adding products to collections
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/collects.json`
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2025-07/collects.json`
     
     console.log('Adding product to collection:', { productId, collectionId, shopifyUrl })
     

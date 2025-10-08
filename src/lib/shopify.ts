@@ -11,7 +11,7 @@ const validateShopifyConfig = () => {
 }
 
 const shopifyApi = axios.create({
-  baseURL: `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-01`,
+  baseURL: `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2025-07`,
   headers: {
     'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
     'Content-Type': 'application/json',

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
                 domainToUse = 'v4b0fh-da.myshopify.com'
               }
               
-              const graphqlUrl = `https://${domainToUse}/admin/api/2023-10/graphql.json`
+              const graphqlUrl = `https://${domainToUse}/admin/api/2025-07/graphql.json`
               const graphqlQuery = {
                 query: `
                   query {

@@ -21,7 +21,7 @@ export async function testShopifyConnection(
     // Clean the domain
     const cleanDomain = shopifyDomain.replace(/^https?:\/\//, '').replace(/\.myshopify\.com$/, '') + '.myshopify.com'
     
-    const response = await axios.get(`https://${cleanDomain}/admin/api/2024-01/shop.json`, {
+    const response = await axios.get(`https://${cleanDomain}/admin/api/2025-07/shop.json`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ export async function testShopifyProductsAccess(
   try {
     const cleanDomain = shopifyDomain.replace(/^https?:\/\//, '').replace(/\.myshopify\.com$/, '') + '.myshopify.com'
     
-    const response = await axios.get(`https://${cleanDomain}/admin/api/2024-01/products.json?limit=1`, {
+    const response = await axios.get(`https://${cleanDomain}/admin/api/2025-07/products.json?limit=1`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export async function testShopifyCollectionsAccess(
   try {
     const cleanDomain = shopifyDomain.replace(/^https?:\/\//, '').replace(/\.myshopify\.com$/, '') + '.myshopify.com'
     
-    const response = await axios.get(`https://${cleanDomain}/admin/api/2024-01/collection_listings.json?limit=1`, {
+    const response = await axios.get(`https://${cleanDomain}/admin/api/2025-07/collection_listings.json?limit=1`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',

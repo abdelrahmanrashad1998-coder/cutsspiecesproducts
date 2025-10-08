@@ -112,7 +112,7 @@ export async function GET(
     }
 
     // Make request to Shopify API
-    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2025-01/products.json`, {
+    const shopifyResponse = await fetch(`https://${shopifyDomain}/admin/api/2025-07/products.json`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export async function GET(
 
     // Use GraphQL to get products with collections data
     try {
-      const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
+      const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
       const graphqlQuery = {
         query: `
           query getProducts($first: Int!) {
@@ -539,7 +539,7 @@ export async function POST(
 
     // Create product in Shopify using GraphQL API
     console.log('Step 11: Setting up GraphQL API...')
-    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-10/graphql.json`
+    const graphqlUrl = `https://${shopifyDomain}/admin/api/2025-07/graphql.json`
     console.log('GraphQL URL:', graphqlUrl)
     
     // Build optimized GraphQL mutation
