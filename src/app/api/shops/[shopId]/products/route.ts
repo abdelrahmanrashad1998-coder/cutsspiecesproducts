@@ -539,10 +539,8 @@ export async function POST(
       description: description, // Use the validated description
       variants: productData.variants?.map((variant: any) => {
         const cleanedVariant = { ...variant }
-        // Replace null values with appropriate defaults
-        if (cleanedVariant.inventory_management === null) {
-          cleanedVariant.inventory_management = 'shopify'
-        }
+        // Don't force inventory_management to 'shopify' - respect the user's choice
+        // Keep inventory_tracking for later use in variant creation
         if (cleanedVariant.option1 === null || cleanedVariant.option1 === '') {
           cleanedVariant.option1 = 'Default'
         }
@@ -851,11 +849,12 @@ export async function POST(
     if (cleanedProductData.variants && cleanedProductData.variants.length > 0) {
       console.log('\n========== CREATING VARIANTS WITH PRICES ==========')
       console.log('Number of input variants:', cleanedProductData.variants.length)
-      console.log('\nInput variants with prices:', JSON.stringify(cleanedProductData.variants.map((v: any) => ({
+      console.log('\nInput variants with prices and inventory tracking:', JSON.stringify(cleanedProductData.variants.map((v: any) => ({
         option1: v.option1,
         price: v.price,
         sku: v.sku,
-        inventory_quantity: v.inventory_quantity
+        inventory_tracking: v.inventory_tracking,
+        inventory_management: v.inventory_management
       })), null, 2))
       
       try {
@@ -870,9 +869,14 @@ export async function POST(
             variantInput.sku = inputVariant.sku
           }
           
-          // Note: Inventory management requires a valid location ID
-          // For now, we'll skip inventory setting and let Shopify use defaults
-          // TODO: Get the shop's default location and set inventory there
+          // Set inventory tracking based on user's choice
+          // inventory_tracking is a boolean from the frontend
+          // We use the inventoryItem.tracked field in GraphQL
+          if (typeof inputVariant.inventory_tracking === 'boolean') {
+            variantInput.inventoryItem = {
+              tracked: inputVariant.inventory_tracking
+            }
+          }
           
           // Add option values - for single Size option, just use option1
           variantInput.optionValues = []
@@ -897,6 +901,10 @@ export async function POST(
                 price
                 sku
                 inventoryQuantity
+                inventoryItem {
+                  id
+                  tracked
+                }
                 selectedOptions {
                   name
                   value
@@ -938,7 +946,8 @@ export async function POST(
             const createdVariants = variantsData.data.productVariantsBulkCreate.productVariants
             console.log(`✅ ${createdVariants.length} variants created successfully:`)
             createdVariants.forEach((v: any) => {
-              console.log(`   - ${v.title}: $${v.price} (SKU: ${v.sku || 'N/A'})`)
+              const inventoryTracked = v.inventoryItem?.tracked ? 'Tracked' : 'Untracked'
+              console.log(`   - ${v.title}: $${v.price} (SKU: ${v.sku || 'N/A'}, Inventory: ${inventoryTracked})`)
             })
             
             // Update finalProductData with new variants
