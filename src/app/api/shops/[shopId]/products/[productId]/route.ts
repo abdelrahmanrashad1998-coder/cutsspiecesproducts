@@ -22,6 +22,9 @@ async function verifyAuthToken(request: NextRequest) {
   }
   
   const token = authHeader.split('Bearer ')[1]
+  if (!auth) {
+    throw new Error('Firebase Admin SDK not initialized')
+  }
   const decodedToken = await auth.verifyIdToken(token)
   return decodedToken
 }
@@ -39,15 +42,49 @@ export async function PUT(
 
     console.log('Product update request:', { shopId, productId, userId })
 
+    // Check if database is initialized
+    if (!db) {
+      const errorResponse = NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+
     // Verify the shop belongs to the user
-    const shopDoc = await db.collection('shops').doc(shopId).get()
+    // Try to find the shop by Firebase document ID first, then by Shopify domain
+    let shopDoc = await db.collection('shops').doc(shopId).get()
     
     if (!shopDoc.exists) {
-      const response = NextResponse.json(
-        { error: 'Shop not found' },
-        { status: 404 }
-      )
-      return addCorsHeaders(response)
+      // If not found by document ID, try to find by Shopify domain
+      console.log(`Shop ${shopId} not found by document ID. Trying to find by Shopify domain...`)
+      const domainQuery = await db.collection('shops').where('shopifyDomain', '==', shopId).where('userId', '==', userId).get()
+      
+      if (domainQuery.docs.length > 0) {
+        // Found by domain, use the first match
+        shopDoc = domainQuery.docs[0]
+        console.log('Found shop by domain:', shopDoc.id)
+      } else {
+        // Debug: Let's see what shops actually exist for this user
+        console.log(`Shop ${shopId} not found by ID or domain. Checking all shops for user ${userId}...`)
+        const userShopsQuery = await db.collection('shops').where('userId', '==', userId).get()
+        const userShops = userShopsQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        console.log('Available shops for user:', userShops)
+        
+        const response = NextResponse.json(
+          { 
+            error: 'Shop not found',
+            debug: {
+              requestedShopId: shopId,
+              userId: userId,
+              availableShops: userShops.map((shop: any) => ({ id: shop.id, shopName: shop.shopName, shopifyDomain: shop.shopifyDomain })),
+              searchMethod: 'tried both document ID and domain lookup'
+            }
+          },
+          { status: 404 }
+        )
+        return addCorsHeaders(response)
+      }
     }
 
     const shopData = shopDoc.data()
@@ -125,10 +162,10 @@ export async function PUT(
       })
       
       let errorMessage = 'Failed to update product in Shopify'
-      let errorDetails = errorData
+      let errorDetails: any = errorData
       
       // Handle specific Shopify error codes
-      if (response.status === 422) {
+      if (shopifyResponse.status === 422) {
         errorMessage = 'Product validation failed'
         try {
           const parsedError = JSON.parse(errorData)
@@ -195,15 +232,35 @@ export async function GET(
     const userId = decodedToken.uid
     const { shopId, productId } = await params
 
+    // Check if database is initialized
+    if (!db) {
+      const errorResponse = NextResponse.json(
+        { error: 'Database not initialized', message: 'Firebase Admin SDK not properly configured' },
+        { status: 500 }
+      )
+      return addCorsHeaders(errorResponse)
+    }
+
     // Verify the shop belongs to the user
-    const shopDoc = await db.collection('shops').doc(shopId).get()
+    // Try to find the shop by Firebase document ID first, then by Shopify domain
+    let shopDoc = await db.collection('shops').doc(shopId).get()
     
     if (!shopDoc.exists) {
-      const response = NextResponse.json(
-        { error: 'Shop not found' },
-        { status: 404 }
-      )
-      return addCorsHeaders(response)
+      // If not found by document ID, try to find by Shopify domain
+      console.log(`Shop ${shopId} not found by document ID. Trying to find by Shopify domain...`)
+      const domainQuery = await db.collection('shops').where('shopifyDomain', '==', shopId).where('userId', '==', userId).get()
+      
+      if (domainQuery.docs.length > 0) {
+        // Found by domain, use the first match
+        shopDoc = domainQuery.docs[0]
+        console.log('Found shop by domain:', shopDoc.id)
+      } else {
+        const response = NextResponse.json(
+          { error: 'Shop not found' },
+          { status: 404 }
+        )
+        return addCorsHeaders(response)
+      }
     }
 
     const shopData = shopDoc.data()

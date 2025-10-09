@@ -362,7 +362,7 @@ export default function EditProductPage() {
       console.log('Product payload variants:', productPayload.variants)
       console.log('Original product variants:', product?.variants)
 
-      const response = await fetch(`/api/shops/${selectedShop.shopifyDomain}/products/${productId}`, {
+      const response = await fetch(`/api/shops/${selectedShop.id}/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
