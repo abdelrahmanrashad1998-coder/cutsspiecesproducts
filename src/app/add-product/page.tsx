@@ -14,12 +14,16 @@ import {
   X, 
   Plus,
   Loader2,
-  Sparkles
+  Sparkles,
+  Crown,
+  AlertCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 import { ShopDropdown } from '@/components/shop-dropdown'
+import Link from 'next/link'
 
 interface ProductVariant {
   id: string
@@ -46,6 +50,7 @@ interface Collection {
 
 export default function AddProductPage() {
   const { user, firebaseUser, selectedShop, setSelectedShop } = useAuth()
+  const { subscription, canGenerateProduct, incrementProductGeneration } = useSubscription()
   const [images, setImages] = useState<File[]>([])
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([])
@@ -171,6 +176,12 @@ export default function AddProductPage() {
       return
     }
 
+    // Check subscription limits
+    if (!canGenerateProduct()) {
+      toast.error('You have reached your monthly product generation limit. Please upgrade your plan.')
+      return
+    }
+
     // Ensure collections are loaded before analysis
     if (collections.length === 0 && selectedShop) {
       await fetchCollections()
@@ -225,6 +236,9 @@ export default function AddProductPage() {
 
       const data = await response.json()
       if (response.ok) {
+        // Increment usage counter
+        await incrementProductGeneration()
+        
         setAnalysis(data.analysis)
         setProductData(prev => ({
           ...prev,
@@ -418,9 +432,35 @@ export default function AddProductPage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Subscription Warning */}
+        {subscription && !canGenerateProduct() && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="flex items-center gap-4 py-4">
+              <AlertCircle className="h-8 w-8 text-red-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900">Product generation limit reached</h3>
+                <p className="text-sm text-red-700">
+                  You've used {subscription.monthlyProductGenerations} / {subscription.maxMonthlyProducts} products this month. Upgrade to continue.
+                </p>
+              </div>
+              <Link href="/pricing">
+                <Button variant="default" className="bg-red-600 hover:bg-red-700">
+                  <Crown className="mr-2 h-4 w-4" />
+                  Upgrade
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Add New Product</h1>
           <p className="text-gray-600">Upload images and create a new product</p>
+          {subscription && subscription.maxMonthlyProducts !== 'unlimited' && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Products generated: {subscription.monthlyProductGenerations} / {subscription.maxMonthlyProducts} this month
+            </p>
+          )}
         </div>
 
         {/* Shop Selection */}

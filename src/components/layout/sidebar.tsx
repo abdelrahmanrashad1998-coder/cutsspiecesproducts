@@ -10,7 +10,8 @@ import {
   LogOut,
   Package,
   Store,
-  User
+  User,
+  Crown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Add Product', href: '/add-product', icon: Plus },
   { name: 'Manage Shops', href: '/connect-shop', icon: Store },
+  { name: 'Pricing & Plans', href: '/pricing', icon: Crown },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

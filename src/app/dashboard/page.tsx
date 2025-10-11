@@ -5,12 +5,16 @@ import { Button } from '@/components/ui/button'
 import { ShopDropdown } from '@/components/shop-dropdown'
 import { ProductsDisplay } from '@/components/products-display'
 import { CollectionsDisplay } from '@/components/collections-display'
-import { Plus, Store } from 'lucide-react'
+import { Plus, Store, Crown, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSubscription } from '@/contexts/SubscriptionContext'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default function DashboardPage() {
   const { user, selectedShop, setSelectedShop } = useAuth()
+  const { subscription, isTrialActive, daysLeftInTrial } = useSubscription()
 
   if (!user) {
     return (
@@ -25,6 +29,46 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {/* Subscription Alert */}
+        {subscription?.status === 'expired' && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="flex items-center gap-4 py-4">
+              <AlertCircle className="h-8 w-8 text-red-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900">Your trial has expired</h3>
+                <p className="text-sm text-red-700">Upgrade to a paid plan to continue using the platform.</p>
+              </div>
+              <Link href="/pricing">
+                <Button variant="default" className="bg-red-600 hover:bg-red-700">
+                  <Crown className="mr-2 h-4 w-4" />
+                  View Plans
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Trial Warning */}
+        {isTrialActive() && daysLeftInTrial() <= 7 && (
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="flex items-center gap-4 py-4">
+              <AlertCircle className="h-8 w-8 text-yellow-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900">Trial ending soon</h3>
+                <p className="text-sm text-yellow-700">
+                  You have {daysLeftInTrial()} days left in your free trial. Upgrade now to continue without interruption.
+                </p>
+              </div>
+              <Link href="/pricing">
+                <Button variant="outline" className="border-yellow-600 text-yellow-900 hover:bg-yellow-100">
+                  <Crown className="mr-2 h-4 w-4" />
+                  View Plans
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header Section */}
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
@@ -48,6 +92,65 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
+
+        {/* Subscription Stats */}
+        {subscription && (
+          <div className="grid md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Current Plan</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold capitalize">{subscription.plan}</p>
+                  {subscription.status === 'trial' && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-900">Trial</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Products This Month</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">
+                  {subscription.monthlyProductGenerations}
+                  {subscription.maxMonthlyProducts !== 'unlimited' && (
+                    <span className="text-base font-normal text-muted-foreground"> / {subscription.maxMonthlyProducts}</span>
+                  )}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Max Shops</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">
+                  {subscription.maxShops === 999 ? 'Unlimited' : subscription.maxShops}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {isTrialActive() ? 'Trial Days Left' : 'Status'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">
+                  {isTrialActive() ? daysLeftInTrial() : (
+                    <Badge className="bg-green-600 text-white">Active</Badge>
+                  )}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Shop Selection */}
         <div className="rounded-lg border bg-card p-6">

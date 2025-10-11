@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 
 export const metadata: Metadata = {
   title: "Shopify AI Manager",
@@ -20,9 +21,11 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <AuthProvider>
-          <SettingsProvider>
-            {children}
-          </SettingsProvider>
+          <SubscriptionProvider>
+            <SettingsProvider>
+              {children}
+            </SettingsProvider>
+          </SubscriptionProvider>
         </AuthProvider>
         <Toaster />
       </body>

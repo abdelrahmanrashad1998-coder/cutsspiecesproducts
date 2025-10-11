@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
 import { useAuth } from '@/contexts/AuthContext'
+import { SubscriptionOnboardingModal } from '@/components/subscription-onboarding-modal'
+import { FirstShopOnboardingModal } from '@/components/first-shop-onboarding-modal'
+import { AccessBlocker } from '@/components/access-blocker'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -32,13 +35,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          {children}
-        </div>
-      </main>
-    </div>
+    <AccessBlocker>
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {children}
+          </div>
+        </main>
+        <SubscriptionOnboardingModal />
+        <FirstShopOnboardingModal />
+      </div>
+    </AccessBlocker>
   )
 }

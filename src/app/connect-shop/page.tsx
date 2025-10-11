@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth, Shop } from '@/contexts/AuthContext'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { toast } from 'sonner'
+import Link from 'next/link'
 import { 
   Loader2, 
   Store, 
@@ -22,7 +24,8 @@ import {
   Trash2, 
   Plus,
   Settings,
-  AlertCircle
+  AlertCircle,
+  Crown
 } from 'lucide-react'
 
 interface ConnectionTest {
@@ -58,6 +61,7 @@ export default function ManageShopsPage() {
   const [connectionTest, setConnectionTest] = useState<ConnectionTest | null>(null)
   
   const { user, firebaseUser } = useAuth()
+  const { subscription, canAddShop } = useSubscription()
   const router = useRouter()
 
   useEffect(() => {
@@ -155,6 +159,12 @@ export default function ManageShopsPage() {
     e.preventDefault()
     if (!firebaseUser) return
 
+    // Check if user can add a new shop (only for new shops, not edits)
+    if (!editingShop && !canAddShop(shops.length)) {
+      toast.error('You have reached your shop limit. Please upgrade your plan to add more shops.')
+      return
+    }
+
     setIsLoading(true)
     try {
       const token = await firebaseUser.getIdToken()
@@ -230,6 +240,27 @@ export default function ManageShopsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {/* Subscription Warning */}
+        {subscription && !canAddShop(shops.length) && !showAddForm && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="flex items-center gap-4 py-4">
+              <AlertCircle className="h-8 w-8 text-red-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900">Shop limit reached</h3>
+                <p className="text-sm text-red-700">
+                  You've reached your maximum of {subscription.maxShops} shop(s). Upgrade to add more shops.
+                </p>
+              </div>
+              <Link href="/pricing">
+                <Button variant="default" className="bg-red-600 hover:bg-red-700">
+                  <Crown className="mr-2 h-4 w-4" />
+                  Upgrade
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header Section */}
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
@@ -240,6 +271,11 @@ export default function ManageShopsPage() {
             <p className="text-muted-foreground">
               Connect, edit, and manage your Shopify stores
             </p>
+            {subscription && (
+              <p className="text-sm text-muted-foreground">
+                Connected shops: {shops.length} / {subscription.maxShops === 999 ? 'Unlimited' : subscription.maxShops}
+              </p>
+            )}
           </div>
         </div>
 
@@ -251,7 +287,10 @@ export default function ManageShopsPage() {
                 <Store className="mr-2 h-5 w-5" />
                 Connected Shops ({shops.length})
               </CardTitle>
-              <Button onClick={() => setShowAddForm(true)}>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                disabled={!canAddShop(shops.length)}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Shop
               </Button>
