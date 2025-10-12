@@ -74,6 +74,7 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [dateFilter, setDateFilter] = useState<string>('all')
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -103,14 +104,33 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   }, [selectedShop])
 
   useEffect(() => {
-    const filtered = products.filter(product =>
+    let filtered = products.filter(product =>
       product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.product_type.toLowerCase().includes(searchTerm.toLowerCase())
     )
+
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date()
+      const daysMap: { [key: string]: number } = {
+        'today': 1,
+        '7days': 7,
+        '30days': 30,
+        '90days': 90
+      }
+      const days = daysMap[dateFilter]
+      const cutoffDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+      
+      filtered = filtered.filter(product => {
+        const productDate = new Date(product.created_at)
+        return productDate >= cutoffDate
+      })
+    }
+
     setFilteredProducts(filtered)
-    setCurrentPage(1) // Reset to first page when search changes
-  }, [products, searchTerm])
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [products, searchTerm, dateFilter])
 
   const fetchCollections = async () => {
     if (!selectedShop || !firebaseUser) return
@@ -366,19 +386,42 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
           </div>
         ) : (
           <>
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search products by title, vendor, or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+            {/* Search and Filters */}
+            <div className="space-y-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search products by title, vendor, or category..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
 
-            {/* Rows per page selector */}
-            <div className="mb-4">
+                {/* Date Filter */}
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium whitespace-nowrap">Added:</label>
+                  <Select
+                    value={dateFilter}
+                    onValueChange={setDateFilter}
+                  >
+                    <SelectTrigger className="h-10 w-[160px]">
+                      <SelectValue placeholder="All time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All time</SelectItem>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="7days">Last 7 days</SelectItem>
+                      <SelectItem value="30days">Last 30 days</SelectItem>
+                      <SelectItem value="90days">Last 90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Rows per page selector */}
               <div className="flex items-center space-x-2">
                 <p className="text-sm font-medium">Rows per page</p>
                 <Select
