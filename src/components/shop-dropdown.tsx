@@ -27,41 +27,8 @@ interface ShopDropdownProps {
 }
 
 export function ShopDropdown({ selectedShop, onShopSelect }: ShopDropdownProps) {
-  const [shops, setShops] = useState<Shop[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [testingConnection, setTestingConnection] = useState<string | null>(null)
-  const { firebaseUser } = useAuth()
-
-  useEffect(() => {
-    if (firebaseUser) {
-      fetchShops()
-    }
-  }, [firebaseUser])
-
-  const fetchShops = async () => {
-    if (!firebaseUser) return
-
-    try {
-      const token = await firebaseUser.getIdToken()
-      
-      const response = await fetch('/api/shops', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setShops(data.shops)
-      } else {
-        toast.error('Failed to fetch shops')
-      }
-    } catch (error) {
-      toast.error('Error fetching shops')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const { firebaseUser, shops, loading } = useAuth()
 
   const handleShopSelect = async (shop: Shop) => {
     if (selectedShop?.id === shop.id) {
@@ -94,7 +61,7 @@ export function ShopDropdown({ selectedShop, onShopSelect }: ShopDropdownProps) 
     }
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center space-x-2">
         <Loader2 className="h-4 w-4 animate-spin" />

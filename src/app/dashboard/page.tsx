@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ShopDropdown } from '@/components/shop-dropdown'
 import { ProductsDisplay } from '@/components/products-display'
 import { CollectionsDisplay } from '@/components/collections-display'
+import { RecentProducts } from '@/components/recent-products'
 import { Plus, Store, Crown, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -162,6 +163,9 @@ export default function DashboardPage() {
             />
           </div>
         </div>
+
+        {/* Recent Products Section */}
+        <RecentProducts selectedShop={selectedShop} limit={5} />
 
         {/* Content Grid */}
         <div className="space-y-8">

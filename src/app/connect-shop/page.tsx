@@ -45,8 +45,6 @@ interface ConnectionTest {
 }
 
 export default function ManageShopsPage() {
-  const [shops, setShops] = useState<Shop[]>([])
-  const [isLoadingShops, setIsLoadingShops] = useState(true)
   const [editingShop, setEditingShop] = useState<Shop | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   
@@ -60,39 +58,9 @@ export default function ManageShopsPage() {
   const [isTesting, setIsTesting] = useState(false)
   const [connectionTest, setConnectionTest] = useState<ConnectionTest | null>(null)
   
-  const { user, firebaseUser } = useAuth()
+  const { user, firebaseUser, shops, refreshShops, loading: isLoadingShops } = useAuth()
   const { subscription, canAddShop } = useSubscription()
   const router = useRouter()
-
-  useEffect(() => {
-    if (firebaseUser) {
-      fetchShops()
-    }
-  }, [firebaseUser])
-
-  const fetchShops = async () => {
-    if (!firebaseUser) return
-
-    try {
-      const token = await firebaseUser.getIdToken()
-      const response = await fetch('/api/shops', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setShops(data.shops)
-      } else {
-        toast.error('Failed to fetch shops')
-      }
-    } catch (error) {
-      toast.error('Error fetching shops')
-    } finally {
-      setIsLoadingShops(false)
-    }
-  }
 
   const resetForm = () => {
     setShopifyDomain('')
@@ -192,7 +160,7 @@ export default function ManageShopsPage() {
       if (response.ok) {
         toast.success(editingShop ? 'Shop updated successfully!' : 'Shop connected successfully!')
         resetForm()
-        fetchShops()
+        await refreshShops()
       } else {
         toast.error(data.error || `Failed to ${editingShop ? 'update' : 'connect'} shop`)
       }
@@ -219,7 +187,7 @@ export default function ManageShopsPage() {
 
       if (response.ok) {
         toast.success('Shop deleted successfully')
-        fetchShops()
+        await refreshShops()
       } else {
         const data = await response.json()
         toast.error(data.error || 'Failed to delete shop')

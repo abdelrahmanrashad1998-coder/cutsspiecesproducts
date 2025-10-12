@@ -36,8 +36,10 @@ interface AuthContextType {
   user: User | null
   firebaseUser: FirebaseUser | null
   loading: boolean
+  shops: Shop[]
   selectedShop: Shop | null
   setSelectedShop: (shop: Shop | null) => void
+  refreshShops: () => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name?: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [shops, setShops] = useState<Shop[]>([])
   const [selectedShop, setSelectedShopState] = useState<Shop | null>(null)
 
   // Load selected shop from localStorage on mount
@@ -77,6 +80,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('selectedShop')
     }
   }
+
+  // Function to fetch shops
+  const fetchShops = async () => {
+    if (!firebaseUser) return
+
+    try {
+      const token = await firebaseUser.getIdToken()
+      const response = await fetch('/api/shops', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setShops(data.shops || [])
+      } else {
+        console.error('Failed to fetch shops')
+      }
+    } catch (error) {
+      console.error('Error fetching shops:', error)
+    }
+  }
+
+  // Public function to refresh shops
+  const refreshShops = async () => {
+    await fetchShops()
+  }
+
+  // Fetch shops when user logs in
+  useEffect(() => {
+    if (firebaseUser) {
+      fetchShops()
+    } else {
+      setShops([])
+    }
+  }, [firebaseUser])
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -167,8 +207,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     firebaseUser,
     loading,
+    shops,
     selectedShop,
     setSelectedShop,
+    refreshShops,
     signIn,
     signUp,
     signInWithGoogle,
