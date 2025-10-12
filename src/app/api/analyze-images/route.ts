@@ -22,7 +22,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resolve user identity (uid) if possible
+    // Use system-wide OpenAI API key from environment
+    const openaiApiKey = process.env.OPENAI_API_KEY || ''
+    
+    if (!openaiApiKey) {
+      return NextResponse.json(
+        { error: 'OpenAI API key not configured. Please contact your system administrator.' },
+        { status: 500 }
+      )
+    }
+
+    // Resolve user identity (uid) to fetch user-specific model preference
     let uid: string | null = null
     if (auth) {
       try {
@@ -33,45 +43,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch OpenAI settings: prefer UID doc, fallback to legacy token doc
-    let openaiApiKey = ''
+    // Fetch user's preferred OpenAI model
     let openaiModel: string | undefined = undefined
     try {
-      if (db) {
-        if (uid) {
-          const byUidRef = db.collection('userSettings').doc(uid)
-          const byUidSnap = await byUidRef.get()
-          if (byUidSnap.exists) {
-            const s = byUidSnap.data() as any
-            openaiApiKey = s?.openaiApiKey || ''
-            openaiModel = s?.openaiModel
-          }
-        }
-
-        if (!openaiApiKey) {
-          const byTokenRef = db.collection('userSettings').doc(token)
-          const byTokenSnap = await byTokenRef.get()
-          if (byTokenSnap.exists) {
-            const s = byTokenSnap.data() as any
-            openaiApiKey = s?.openaiApiKey || ''
-            openaiModel = openaiModel || s?.openaiModel
-          }
+      if (db && uid) {
+        const userSettingsRef = db.collection('userSettings').doc(uid)
+        const userSettingsSnap = await userSettingsRef.get()
+        if (userSettingsSnap.exists) {
+          const settings = userSettingsSnap.data() as any
+          openaiModel = settings?.openaiModel
         }
       }
     } catch (dbError) {
       console.warn('Failed to fetch user settings:', dbError)
-    }
-
-    // Fallback to environment variable if no user settings found
-    if (!openaiApiKey) {
-      openaiApiKey = process.env.OPENAI_API_KEY || ''
-    }
-
-    if (!openaiApiKey) {
-      return NextResponse.json(
-        { error: 'OpenAI API key not configured. Please set your API key in Settings or environment variables.' },
-        { status: 400 }
-      )
     }
 
     const modelToUse = modelFromRequest || openaiModel || 'gpt-4o'
@@ -171,7 +155,7 @@ export async function POST(request: NextRequest) {
       collectionsCount: availableCollections.length
     })
 
-    const analysis = await analyzeProductImages(fullImageUrls, openaiApiKey, modelToUse, storeDescription, availableCollections, storeCurrency)
+    const analysis = await analyzeProductImages(fullImageUrls, modelToUse, storeDescription, availableCollections, storeCurrency)
     
     console.log('Analysis result:', analysis)
     

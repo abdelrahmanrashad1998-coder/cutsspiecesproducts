@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
 
 export interface UserSettings {
-  openaiApiKey?: string
   openaiModel?: string
   defaultVendor?: 'store_name' | 'custom' | 'none'
   customVendor?: string
@@ -22,7 +21,6 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>({
-    openaiApiKey: '',
     openaiModel: 'gpt-4o',
     defaultVendor: 'store_name',
     customVendor: '',

@@ -1,11 +1,11 @@
 import OpenAI from 'openai'
 
-// Function to create OpenAI instance with custom settings
-export function createOpenAIInstance(apiKey?: string) {
-  const key = apiKey || process.env.OPENAI_API_KEY
+// Function to create OpenAI instance using system-wide configuration
+export function createOpenAIInstance() {
+  const key = process.env.OPENAI_API_KEY
   
   if (!key) {
-    throw new Error('OpenAI API key is required. Please provide an API key or set the OPENAI_API_KEY environment variable.')
+    throw new Error('OpenAI API key is required. Please set the OPENAI_API_KEY environment variable.')
   }
   
   return new OpenAI({
@@ -22,7 +22,6 @@ export interface ProductAnalysis {
 
 export async function analyzeProductImages(
   imageUrls: string[],
-  apiKey?: string,
   model: string = 'gpt-4o',
   storeDescription?: string,
   availableCollections?: any[],
@@ -30,7 +29,7 @@ export async function analyzeProductImages(
 ): Promise<ProductAnalysis> {
   try {
 
-    const openai = createOpenAIInstance(apiKey)
+    const openai = createOpenAIInstance()
     
     // Build the prompt with store description context
     let promptText = `You are a professional e-commerce product analyst. You have been provided with ${imageUrls.length} image(s) to analyze. Look at each image carefully and describe exactly what you see.

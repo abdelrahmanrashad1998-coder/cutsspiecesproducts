@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db, auth } from '@/lib/firebase-admin'
 
 export interface UserSettings {
-  openaiApiKey?: string
   openaiModel?: string
   defaultVendor?: 'store_name' | 'custom' | 'none'
   customVendor?: string
@@ -48,7 +47,6 @@ export async function GET(request: NextRequest) {
     } else {
       // Return default settings
       return NextResponse.json({
-        openaiApiKey: '',
         openaiModel: 'gpt-4o',
         defaultVendor: 'store_name',
         customVendor: '',
@@ -86,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { openaiApiKey, openaiModel, defaultVendor, customVendor } = body
+    const { openaiModel, defaultVendor, customVendor } = body
     
     // Validate input
     if (openaiModel && !['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'].includes(openaiModel)) {
@@ -104,7 +102,6 @@ export async function POST(request: NextRequest) {
     
     const settingsRef = db.collection('userSettings').doc(userId)
     const settingsData: UserSettings = {
-      openaiApiKey: openaiApiKey || '',
       openaiModel: openaiModel || 'gpt-4o',
       defaultVendor: defaultVendor || 'store_name',
       customVendor: customVendor || '',
