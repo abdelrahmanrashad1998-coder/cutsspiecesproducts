@@ -45,71 +45,106 @@
 
 :root {
   --radius: 0.625rem;
+  
+  /* Rable Shopify AI Brand Colors */
+  --brand-primary: #245468;
+  --brand-secondary: #fc8a2c;
+  
+  /* Theme Colors */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Primary - Brand Primary Color #245468 (Deep Teal) */
+  --primary: 203 49% 27%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary - Brand Secondary Color #fc8a2c (Vibrant Orange) */
+  --secondary: 26 97% 58%;
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Accent - Using Primary for consistency */
+  --accent: 203 49% 27%;
+  --accent-foreground: 0 0% 100%;
+  
+  /* Muted */
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  
+  /* Destructive */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  
+  /* Border & Input */
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 203 49% 27%;
+  
+  /* Charts - Using brand colors */
+  --chart-1: 203 49% 27%;
+  --chart-2: 26 97% 58%;
+  --chart-3: 203 49% 40%;
+  --chart-4: 26 97% 70%;
+  --chart-5: 203 49% 60%;
+  
+  /* Sidebar - Using Primary Color */
+  --sidebar: 203 49% 27%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 26 97% 58%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 203 49% 35%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 203 49% 20%;
+  --sidebar-ring: 26 97% 58%;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: 203 49% 12%;
+  --foreground: 0 0% 98%;
+  --card: 203 49% 15%;
+  --card-foreground: 0 0% 98%;
+  --popover: 203 49% 15%;
+  --popover-foreground: 0 0% 98%;
+  
+  /* Primary - Lighter version for dark mode */
+  --primary: 203 49% 45%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary - Same vibrant orange */
+  --secondary: 26 97% 58%;
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Accent */
+  --accent: 203 49% 35%;
+  --accent-foreground: 0 0% 100%;
+  
+  --muted: 203 30% 20%;
+  --muted-foreground: 0 0% 70%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 203 30% 25%;
+  --input: 203 30% 25%;
+  --ring: 26 97% 58%;
+  
+  /* Charts - Using brand colors */
+  --chart-1: 203 49% 45%;
+  --chart-2: 26 97% 58%;
+  --chart-3: 203 49% 60%;
+  --chart-4: 26 97% 70%;
+  --chart-5: 203 49% 70%;
+  
+  /* Sidebar - Darker primary */
+  --sidebar: 203 49% 18%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 26 97% 58%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 203 49% 25%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 203 30% 25%;
+  --sidebar-ring: 26 97% 58%;
 }
 
 @layer base {

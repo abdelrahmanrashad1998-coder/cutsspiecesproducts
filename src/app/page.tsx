@@ -19,8 +19,8 @@ export default function Home() {
   }, [firebaseUser, loading, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#245468]/10 to-[#fc8a2c]/10">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-[#fc8a2c]"></div>
     </div>
   )
 }

@@ -53,16 +53,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            {isSignUp ? 'Create Account' : 'Sign In'}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#245468]/10 to-[#fc8a2c]/10 py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md border-2 border-[#245468]/20 shadow-xl">
+        <CardHeader className="space-y-3 text-center">
+          <div className="mx-auto bg-[#245468] rounded-full p-3 w-16 h-16 flex items-center justify-center mb-2">
+            <svg className="h-8 w-8 text-[#fc8a2c]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <CardTitle className="text-3xl font-bold text-[#245468]">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-gray-600">
             {isSignUp 
-              ? 'Create your account to manage your Shopify stores'
-              : 'Sign in to your account to manage your Shopify stores'
+              ? 'Join Rable Shopify AI to manage your stores'
+              : 'Sign in to Rable Shopify AI'
             }
           </CardDescription>
         </CardHeader>
@@ -158,7 +163,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-blue-600 hover:text-blue-500"
+              className="text-sm text-[#fc8a2c] hover:text-[#e07b27] font-medium transition-colors"
             >
               {isSignUp 
                 ? 'Already have an account? Sign in'

@@ -91,17 +91,20 @@ export function SubscriptionOnboardingModal() {
   // If trial not accepted, show DIRECT blocking modal (not using Dialog component)
   if (!subscription.trialAccepted) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto m-4 border-2 border-blue-200">
-          {/* Header - Friendly Welcome */}
-          <div className="relative p-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-white/20 rounded-full p-3">
-                <Gift className="h-8 w-8" />
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-[#245468]/10 via-[#fc8a2c]/10 to-[#245468]/20 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[800px] max-h-[90vh] overflow-y-auto m-4 border-2 border-[#245468]/20">
+          {/* Header - Enterprise Welcome */}
+          <div className="relative p-8 bg-gradient-to-r from-[#245468] to-[#1a3d4d] text-white rounded-t-2xl">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#fc8a2c] blur-xl opacity-50 rounded-full"></div>
+                <div className="relative bg-white/10 rounded-full p-3 backdrop-blur-sm">
+                  <Gift className="h-8 w-8 text-[#fc8a2c]" />
+                </div>
               </div>
               <div>
-                <h2 className="text-3xl font-bold">Welcome to Your Free Trial! 🎉</h2>
-                <p className="text-blue-100 text-sm mt-1">Let's get you started in just a moment</p>
+                <h2 className="text-3xl font-bold tracking-tight">Welcome to Rable Shopify AI! 🎉</h2>
+                <p className="text-white/80 text-sm mt-1">Start your enterprise journey in just a moment</p>
               </div>
             </div>
           </div>
@@ -110,43 +113,43 @@ export function SubscriptionOnboardingModal() {
           <div className="space-y-6 p-8">
           {/* Plan Comparison */}
           <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Choose Your Plan</h3>
-            <div className="grid md:grid-cols-3 gap-4">
+            <h3 className="text-2xl font-bold text-[#245468] mb-6 text-center">Choose Your Plan</h3>
+            <div className="grid md:grid-cols-3 gap-5">
               {/* Free Trial */}
-              <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-5 border-2 border-blue-400 shadow-lg">
+              <div className="relative bg-gradient-to-br from-[#245468]/5 to-[#fc8a2c]/5 rounded-xl p-6 border-2 border-[#245468] shadow-lg">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-blue-600 text-white px-3 py-1">🎁 Recommended</Badge>
+                  <Badge className="bg-[#fc8a2c] text-white px-4 py-1 shadow-lg">🎁 Recommended</Badge>
                 </div>
                 <div className="text-center mt-2 mb-4">
-                  <div className="inline-flex items-center justify-center bg-blue-100 rounded-full p-3 mb-2">
-                    <Gift className="h-6 w-6 text-blue-600" />
+                  <div className="inline-flex items-center justify-center bg-[#245468] rounded-full p-3 mb-3">
+                    <Gift className="h-6 w-6 text-white" />
                   </div>
-                  <h4 className="font-bold text-lg text-gray-900">Free Trial</h4>
-                  <div className="text-3xl font-bold text-blue-600 my-2">FREE</div>
+                  <h4 className="font-bold text-lg text-[#245468]">Free Trial</h4>
+                  <div className="text-3xl font-bold text-[#fc8a2c] my-2">FREE</div>
                   <p className="text-xs text-gray-600">for 2 months</p>
                 </div>
-                <div className="space-y-2 mb-4 text-sm">
+                <div className="space-y-2 mb-5 text-sm">
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span><strong>1</strong> shop</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span><strong>20</strong> products/mo</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span>AI descriptions</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span>Image analysis</span>
                   </div>
                 </div>
                 <Button
                   onClick={handleAcceptAndContinue}
                   disabled={accepting}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  className="w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white shadow-lg hover:shadow-xl transition-all"
                 >
                   {accepting ? (
                     <>
@@ -160,34 +163,34 @@ export function SubscriptionOnboardingModal() {
               </div>
 
               {/* Basic Plan */}
-              <div className="bg-white rounded-xl p-5 border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all">
+              <div className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-[#245468] hover:shadow-lg transition-all">
                 <div className="text-center mb-4">
-                  <div className="inline-flex items-center justify-center bg-purple-100 rounded-full p-3 mb-2">
-                    <Check className="h-6 w-6 text-purple-600" />
+                  <div className="inline-flex items-center justify-center bg-[#245468]/10 rounded-full p-3 mb-3">
+                    <Check className="h-6 w-6 text-[#245468]" />
                   </div>
-                  <h4 className="font-bold text-lg text-gray-900">Basic</h4>
-                  <div className="text-3xl font-bold text-purple-600 my-2">500 EGP</div>
+                  <h4 className="font-bold text-lg text-[#245468]">Basic</h4>
+                  <div className="text-3xl font-bold text-[#245468] my-2">500 EGP</div>
                   <p className="text-xs text-gray-600">per month</p>
                 </div>
-                <div className="space-y-2 mb-4 text-sm">
+                <div className="space-y-2 mb-5 text-sm">
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span><strong>2</strong> shops</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span><strong>50</strong> products/mo</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span>AI descriptions</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span>Image analysis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#245468] flex-shrink-0" />
                     <span>Priority support</span>
                   </div>
                 </div>
@@ -195,7 +198,7 @@ export function SubscriptionOnboardingModal() {
                   onClick={() => handleUpgrade('basic')}
                   disabled={upgrading !== null}
                   variant="outline"
-                  className="w-full border-purple-600 text-purple-700 hover:bg-purple-50"
+                  className="w-full border-2 border-[#245468] text-[#245468] hover:bg-[#245468] hover:text-white transition-all"
                 >
                   {upgrading === 'basic' ? (
                     <>
@@ -209,42 +212,41 @@ export function SubscriptionOnboardingModal() {
               </div>
 
               {/* Premium Plan */}
-              <div className="bg-white rounded-xl p-5 border border-gray-200 hover:border-yellow-400 hover:shadow-md transition-all">
+              <div className="relative bg-gradient-to-br from-[#fc8a2c]/5 to-[#fc8a2c]/10 rounded-xl p-6 border-2 border-[#fc8a2c] shadow-lg">
                 <div className="text-center mb-4">
-                  <div className="inline-flex items-center justify-center bg-yellow-100 rounded-full p-3 mb-2">
-                    <Crown className="h-6 w-6 text-yellow-600" />
+                  <div className="inline-flex items-center justify-center bg-[#fc8a2c] rounded-full p-3 mb-3">
+                    <Crown className="h-6 w-6 text-white" />
                   </div>
-                  <h4 className="font-bold text-lg text-gray-900">Premium</h4>
-                  <div className="text-3xl font-bold text-yellow-600 my-2">750 EGP</div>
+                  <h4 className="font-bold text-lg text-[#fc8a2c]">Premium</h4>
+                  <div className="text-3xl font-bold text-[#fc8a2c] my-2">750 EGP</div>
                   <p className="text-xs text-gray-600">per month</p>
                 </div>
-                <div className="space-y-2 mb-4 text-sm">
+                <div className="space-y-2 mb-5 text-sm">
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#fc8a2c] flex-shrink-0" />
                     <span><strong>Unlimited</strong> shops</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#fc8a2c] flex-shrink-0" />
                     <span><strong>Unlimited</strong> products</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#fc8a2c] flex-shrink-0" />
                     <span>AI descriptions</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#fc8a2c] flex-shrink-0" />
                     <span>Image analysis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#fc8a2c] flex-shrink-0" />
                     <span>Priority support</span>
                   </div>
                 </div>
                 <Button
                   onClick={() => handleUpgrade('premium')}
                   disabled={upgrading !== null}
-                  variant="outline"
-                  className="w-full border-yellow-600 text-yellow-700 hover:bg-yellow-50"
+                  className="w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white shadow-lg hover:shadow-xl transition-all"
                 >
                   {upgrading === 'premium' ? (
                     <>
@@ -264,24 +266,24 @@ export function SubscriptionOnboardingModal() {
 
           {/* Email Verification - Only show if not verified */}
           {!firebaseUser?.emailVerified && (
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+            <div className="bg-[#245468]/5 rounded-xl p-6 border-2 border-[#245468]/20">
               <div className="flex items-start gap-3">
-                <div className="bg-blue-100 rounded-full p-2">
-                  <Mail className="h-5 w-5 text-blue-600" />
+                <div className="bg-[#245468] rounded-full p-2">
+                  <Mail className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 mb-2">📧 One More Thing...</h4>
+                  <h4 className="font-bold text-[#245468] mb-2">📧 One More Thing...</h4>
                   <p className="text-sm text-gray-700 mb-3">
-                    Please verify your email within <strong className="text-blue-600">{gracePeriodDays} days</strong> to keep using the platform after accepting the trial.
+                    Please verify your email within <strong className="text-[#fc8a2c]">{gracePeriodDays} days</strong> to keep using the platform after accepting the trial.
                   </p>
-                  <p className="text-sm text-gray-600 mb-3 bg-white rounded-lg p-2">
+                  <p className="text-sm text-gray-600 mb-3 bg-white rounded-lg p-3 border border-[#245468]/10">
                     ✉️ <strong>{firebaseUser?.email}</strong>
                   </p>
                   <Button
                     onClick={handleSendVerification}
                     disabled={sendingVerification}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-[#245468] hover:bg-[#1a3d4d] text-white shadow-md"
                   >
                     {sendingVerification ? (
                       <>
@@ -305,12 +307,12 @@ export function SubscriptionOnboardingModal() {
 
           {/* Email Verified Confirmation */}
           {firebaseUser?.emailVerified && (
-            <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+            <div className="bg-[#245468]/5 rounded-xl p-4 border-2 border-[#245468]/30">
               <div className="flex items-center gap-3 justify-center">
-                <div className="bg-green-100 rounded-full p-2">
-                  <Check className="h-5 w-5 text-green-600" />
+                <div className="bg-[#245468] rounded-full p-2">
+                  <Check className="h-5 w-5 text-white" />
                 </div>
-                <p className="text-sm text-green-800 font-semibold">
+                <p className="text-sm text-[#245468] font-semibold">
                   ✅ Email verified! You're ready to go.
                 </p>
               </div>
@@ -319,10 +321,10 @@ export function SubscriptionOnboardingModal() {
 
           </div>
 
-          {/* Footer - Simple note */}
-          <div className="bg-gray-50 p-4 rounded-b-2xl border-t text-center">
-            <p className="text-xs text-gray-500">
-              By choosing a plan, you agree to our terms of service
+          {/* Footer - Enterprise note */}
+          <div className="bg-gradient-to-r from-[#245468]/5 to-[#fc8a2c]/5 p-5 rounded-b-2xl border-t border-[#245468]/10 text-center">
+            <p className="text-xs text-gray-600">
+              By choosing a plan, you agree to our terms of service • <strong className="text-[#245468]">Powered by Rable Shopify AI</strong>
             </p>
         </div>
       </div>

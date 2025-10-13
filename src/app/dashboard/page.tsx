@@ -20,7 +20,7 @@ export default function DashboardPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-4 border-[#fc8a2c]"></div>
         </div>
       </DashboardLayout>
     )
@@ -50,17 +50,17 @@ export default function DashboardPage() {
 
         {/* Trial Warning */}
         {isTrialActive() && daysLeftInTrial() <= 7 && (
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-2 border-[#fc8a2c]/50 bg-[#fc8a2c]/5">
             <CardContent className="flex items-center gap-4 py-4">
-              <AlertCircle className="h-8 w-8 text-yellow-600 flex-shrink-0" />
+              <AlertCircle className="h-8 w-8 text-[#fc8a2c] flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-yellow-900">Trial ending soon</h3>
-                <p className="text-sm text-yellow-700">
+                <h3 className="font-semibold text-[#245468]">Trial ending soon</h3>
+                <p className="text-sm text-gray-700">
                   You have {daysLeftInTrial()} days left in your free trial. Upgrade now to continue without interruption.
                 </p>
               </div>
               <Link href="/pricing">
-                <Button variant="outline" className="border-yellow-600 text-yellow-900 hover:bg-yellow-100">
+                <Button variant="outline" className="border-2 border-[#fc8a2c] text-[#fc8a2c] hover:bg-[#fc8a2c] hover:text-white">
                   <Crown className="mr-2 h-4 w-4" />
                   View Plans
                 </Button>
@@ -72,8 +72,8 @@ export default function DashboardPage() {
         {/* Header Section */}
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight text-[#245468]">Dashboard</h1>
+            <p className="text-gray-600">
               Manage your Shopify stores, products, and collections
             </p>
           </div>
@@ -102,9 +102,9 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold capitalize">{subscription.plan}</p>
+                  <p className="text-2xl font-bold capitalize text-[#245468]">{subscription.plan}</p>
                   {subscription.status === 'trial' && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-900">Trial</Badge>
+                    <Badge variant="secondary" className="bg-[#fc8a2c] text-white">Trial</Badge>
                   )}
                 </div>
               </CardContent>
@@ -142,9 +142,9 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-[#245468]">
                   {isTrialActive() ? daysLeftInTrial() : (
-                    <Badge className="bg-green-600 text-white">Active</Badge>
+                    <Badge className="bg-[#245468] text-white">Active</Badge>
                   )}
                 </p>
               </CardContent>

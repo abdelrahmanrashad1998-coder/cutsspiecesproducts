@@ -98,23 +98,23 @@ export default function PricingPage() {
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">Choose Your Plan</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="text-4xl font-bold tracking-tight text-[#245468]">Choose Your Plan</h1>
+          <p className="text-xl text-gray-600">
             Select the perfect plan for your business needs
           </p>
           
           {/* Trial Status */}
           {isTrialActive() && (
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-full px-6 py-3">
-              <Gift className="h-5 w-5 text-blue-600" />
-              <span className="font-semibold text-blue-900">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#245468]/10 to-[#fc8a2c]/10 border-2 border-[#245468]/30 rounded-full px-6 py-3">
+              <Gift className="h-5 w-5 text-[#fc8a2c]" />
+              <span className="font-semibold text-[#245468]">
                 {daysLeftInTrial()} days left in your free trial
               </span>
             </div>
           )}
 
           {subscription?.status === 'expired' && (
-            <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-6 py-3">
+            <div className="inline-flex items-center gap-2 bg-red-50 border-2 border-red-400 rounded-full px-6 py-3">
               <span className="font-semibold text-red-900">
                 Your trial has expired. Please upgrade to continue using the platform.
               </span>
@@ -124,15 +124,15 @@ export default function PricingPage() {
 
         {/* Current Subscription Info */}
         {subscription && (
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <Card className="bg-gradient-to-r from-[#245468]/5 to-[#fc8a2c]/5 border-2 border-[#245468]/30">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-[#245468]">
                 Current Subscription
                 {subscription.status === 'trial' && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-900">Trial</Badge>
+                  <Badge variant="secondary" className="bg-[#fc8a2c] text-white">Trial</Badge>
                 )}
                 {subscription.status === 'active' && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-900">Active</Badge>
+                  <Badge variant="secondary" className="bg-[#245468] text-white">Active</Badge>
                 )}
               </CardTitle>
             </CardHeader>
@@ -169,11 +169,11 @@ export default function PricingPage() {
             return (
               <Card 
                 key={plan.id}
-                className={`relative ${plan.highlight ? 'border-2 border-purple-500 shadow-lg' : ''}`}
+                className={`relative ${plan.highlight ? 'border-2 border-[#fc8a2c] shadow-xl' : 'border-2 border-[#245468]/20'}`}
               >
                 {plan.highlight && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-1">
+                    <Badge className="bg-[#fc8a2c] text-white px-4 py-1 shadow-lg">
                       Most Popular
                     </Badge>
                   </div>
@@ -181,9 +181,9 @@ export default function PricingPage() {
                 
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <Icon className={`h-8 w-8 ${plan.highlight ? 'text-purple-600' : 'text-blue-600'}`} />
+                    <Icon className={`h-8 w-8 ${plan.highlight ? 'text-[#fc8a2c]' : 'text-[#245468]'}`} />
                     {isCurrentPlan && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-900">
+                      <Badge variant="secondary" className="bg-[#245468] text-white">
                         Current
                       </Badge>
                     )}
@@ -203,7 +203,7 @@ export default function PricingPage() {
                   <ul className="space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <Check className="h-5 w-5 text-[#245468] flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{feature}</span>
                       </li>
                     ))}

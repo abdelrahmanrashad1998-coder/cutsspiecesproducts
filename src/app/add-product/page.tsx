@@ -533,7 +533,7 @@ export default function AddProductPage() {
                   type="button"
                   onClick={analyzeImages}
                   disabled={isAnalyzing}
-                  className="w-full"
+                  className="w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white shadow-lg hover:shadow-xl transition-all"
                 >
                   {isAnalyzing ? (
                     <>

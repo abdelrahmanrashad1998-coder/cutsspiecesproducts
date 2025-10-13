@@ -12,8 +12,8 @@ export function AccessBlocker({ children }: { children: React.ReactNode }) {
   // Block rendering if access is not allowed
   if (!firebaseUser || !subscription) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#245468]/10 to-[#fc8a2c]/10">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#fc8a2c]"></div>
       </div>
     )
   }
@@ -31,14 +31,14 @@ export function AccessBlocker({ children }: { children: React.ReactNode }) {
     const daysLeft = daysLeftInGracePeriod()
     
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-xl border-4 border-red-500 p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#245468]/10 to-[#fc8a2c]/10 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border-4 border-red-500 p-8 text-center">
           <Lock className="h-16 w-16 text-red-600 mx-auto mb-4 animate-pulse" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Suspended</h2>
+          <h2 className="text-3xl font-bold text-[#245468] mb-3">Account Suspended</h2>
           <p className="text-gray-700 mb-4">
             Your access has been blocked because:
           </p>
-          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-4">
+          <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 mb-4">
             <ul className="text-sm text-red-800 text-left space-y-2">
               {!firebaseUser.emailVerified && daysLeft <= 0 && (
                 <li>❌ Email verification period expired ({daysLeft} days left)</li>
@@ -48,7 +48,7 @@ export function AccessBlocker({ children }: { children: React.ReactNode }) {
               )}
             </ul>
           </div>
-          <p className="text-sm text-gray-700 font-semibold mb-4">
+          <p className="text-sm text-[#245468] font-semibold mb-4">
             To restore access:
           </p>
           <ul className="text-sm text-gray-600 text-left space-y-2 mb-6">
@@ -57,7 +57,7 @@ export function AccessBlocker({ children }: { children: React.ReactNode }) {
           </ul>
           <a
             href="/pricing"
-            className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            className="block w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl"
           >
             View Upgrade Options
           </a>

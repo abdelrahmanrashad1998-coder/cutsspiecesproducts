@@ -168,19 +168,22 @@ export function FirstShopOnboardingModal() {
   if (pathname === '/connect-shop' || pathname === '/pricing') return null
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto border-2 border-green-200">
-        {/* Header - Welcoming */}
-        <div className="relative p-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-2xl">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="bg-white/20 rounded-full p-3">
-              <Store className="h-8 w-8" />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-[#245468]/10 via-[#fc8a2c]/10 to-[#245468]/20 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[800px] max-h-[90vh] overflow-y-auto border-2 border-[#245468]/20">
+        {/* Header - Enterprise Welcoming */}
+        <div className="relative p-8 bg-gradient-to-r from-[#245468] to-[#1a3d4d] text-white rounded-t-2xl">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#fc8a2c] blur-xl opacity-50 rounded-full"></div>
+              <div className="relative bg-white/10 rounded-full p-3 backdrop-blur-sm">
+                <Store className="h-8 w-8 text-[#fc8a2c]" />
+              </div>
             </div>
             <div>
-              <h2 className="text-3xl font-bold">
+              <h2 className="text-3xl font-bold tracking-tight">
                 {step === 'welcome' ? "Let's Get Started! 🚀" : "Connect Your Shop 🏪"}
               </h2>
-              <p className="text-green-100 text-sm mt-1">
+              <p className="text-white/80 text-sm mt-1">
                 {step === 'welcome' ? 'Connect your first Shopify store' : 'Step 1 of 1 - Quick Setup'}
               </p>
             </div>
@@ -191,10 +194,13 @@ export function FirstShopOnboardingModal() {
         {step === 'welcome' && (
           <div className="p-8 space-y-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center bg-green-100 rounded-full p-4 mb-4">
-              <Store className="h-12 w-12 text-green-600" />
+            <div className="relative inline-flex items-center justify-center mb-4">
+              <div className="absolute inset-0 bg-[#fc8a2c] blur-2xl opacity-30 rounded-full"></div>
+              <div className="relative bg-[#245468] rounded-full p-4">
+                <Store className="h-12 w-12 text-[#fc8a2c]" />
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
+            <h3 className="text-2xl font-bold text-[#245468] mb-2">
               You're all set! Now let's connect your store
             </h3>
             <p className="text-gray-600 mb-6">
@@ -203,53 +209,53 @@ export function FirstShopOnboardingModal() {
           </div>
 
           {/* Benefits Preview */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-            <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-600" />
+          <div className="bg-gradient-to-br from-[#245468]/5 to-[#fc8a2c]/5 rounded-xl p-6 border-2 border-[#245468]/20">
+            <h4 className="font-bold text-[#245468] mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-[#fc8a2c]" />
               What you can do after connecting:
             </h4>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-full p-1.5">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <div className="bg-[#245468] rounded-full p-1.5">
+                  <CheckCircle className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm">Upload product images and get AI descriptions</span>
+                <span className="text-sm text-gray-700">Upload product images and get AI descriptions</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-full p-1.5">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <div className="bg-[#245468] rounded-full p-1.5">
+                  <CheckCircle className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm">Organize products into collections</span>
+                <span className="text-sm text-gray-700">Organize products into collections</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-full p-1.5">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <div className="bg-[#245468] rounded-full p-1.5">
+                  <CheckCircle className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm">Generate 20 products per month with AI</span>
+                <span className="text-sm text-gray-700">Generate 20 products per month with AI</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-full p-1.5">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                <div className="bg-[#245468] rounded-full p-1.5">
+                  <CheckCircle className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm">Sync directly with your Shopify store</span>
+                <span className="text-sm text-gray-700">Sync directly with your Shopify store</span>
               </div>
             </div>
           </div>
 
           {/* Quick Guide */}
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <h4 className="font-semibold text-gray-900 mb-3 text-sm">Quick Setup (2 minutes):</h4>
+          <div className="bg-[#245468]/5 rounded-xl p-5 border border-[#245468]/20">
+            <h4 className="font-semibold text-[#245468] mb-3 text-sm">Quick Setup (2 minutes):</h4>
             <ol className="space-y-2 text-xs text-gray-700">
               <li className="flex gap-2">
-                <span className="font-bold text-blue-600">1.</span>
+                <span className="font-bold text-[#fc8a2c]">1.</span>
                 <span>Get your Shopify store URL (e.g., yourstore.myshopify.com)</span>
               </li>
               <li className="flex gap-2">
-                <span className="font-bold text-blue-600">2.</span>
+                <span className="font-bold text-[#fc8a2c]">2.</span>
                 <span>Create a private app in your Shopify admin to get API access token</span>
               </li>
               <li className="flex gap-2">
-                <span className="font-bold text-blue-600">3.</span>
+                <span className="font-bold text-[#fc8a2c]">3.</span>
                 <span>Connect your store and start generating products!</span>
               </li>
             </ol>
@@ -259,7 +265,7 @@ export function FirstShopOnboardingModal() {
           <div className="space-y-3">
             <Button
               onClick={handleStartSetup}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-lg py-6 shadow-lg"
+              className="w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white text-lg py-6 shadow-lg hover:shadow-xl transition-all"
               size="lg"
             >
               <Store className="mr-2 h-5 w-5" />
@@ -270,7 +276,7 @@ export function FirstShopOnboardingModal() {
             <Button
               onClick={handleSkipForNow}
               variant="outline"
-              className="w-full"
+              className="w-full border-2 border-[#245468]/30 text-[#245468] hover:bg-[#245468]/5"
             >
               I'll do this later
             </Button>
@@ -342,26 +348,26 @@ export function FirstShopOnboardingModal() {
 
               {/* Connection Test Results */}
               {connectionTest && (
-                <div className={`p-3 rounded-lg border-2 ${
+                <div className={`p-4 rounded-lg border-2 ${
                   connectionTest.success 
-                    ? 'bg-green-50 border-green-300' 
-                    : 'bg-red-50 border-red-300'
+                    ? 'bg-[#245468]/5 border-[#245468]' 
+                    : 'bg-red-50 border-red-400'
                 }`}>
                   <div className="flex items-center space-x-2">
                     {connectionTest.success ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-[#245468]" />
                     ) : (
                       <XCircle className="h-5 w-5 text-red-600" />
                     )}
                     <span className={`text-sm font-medium ${
-                      connectionTest.success ? 'text-green-800' : 'text-red-800'
+                      connectionTest.success ? 'text-[#245468]' : 'text-red-800'
                     }`}>
                       {connectionTest.message}
                     </span>
                   </div>
                   
                   {connectionTest.shopInfo && (
-                    <div className="mt-2 text-xs text-green-700 space-y-1">
+                    <div className="mt-3 text-xs text-[#245468] space-y-1 bg-white p-3 rounded-lg border border-[#245468]/20">
                       <p><strong>Shop:</strong> {connectionTest.shopInfo.name}</p>
                       <p><strong>Email:</strong> {connectionTest.shopInfo.email}</p>
                       <p><strong>Currency:</strong> {connectionTest.shopInfo.currency}</p>
@@ -408,9 +414,9 @@ export function FirstShopOnboardingModal() {
             </div>
 
             {/* How to Get Token */}
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <h4 className="font-semibold text-sm text-gray-900 mb-2">📖 How to get your Access Token:</h4>
-              <ol className="text-xs text-gray-700 space-y-1 list-decimal list-inside">
+            <div className="bg-[#245468]/5 rounded-xl p-5 border-2 border-[#245468]/20">
+              <h4 className="font-semibold text-sm text-[#245468] mb-3">📖 How to get your Access Token:</h4>
+              <ol className="text-xs text-gray-700 space-y-1.5 list-decimal list-inside">
                 <li>Go to your Shopify admin panel</li>
                 <li>Navigate to: Apps → App and sales channel settings</li>
                 <li>Click "Develop apps" → "Create an app"</li>
@@ -421,7 +427,7 @@ export function FirstShopOnboardingModal() {
                 type="button"
                 variant="link"
                 size="sm"
-                className="mt-2 p-0 h-auto text-blue-600"
+                className="mt-3 p-0 h-auto text-[#fc8a2c] hover:text-[#e07b27]"
                 onClick={() => window.open('https://help.shopify.com/en/manual/apps/app-types/custom-apps', '_blank')}
               >
                 <ExternalLink className="mr-1 h-3 w-3" />
@@ -435,14 +441,14 @@ export function FirstShopOnboardingModal() {
                 type="button"
                 variant="outline"
                 onClick={() => setStep('welcome')}
-                className="flex-1"
+                className="flex-1 border-2 border-[#245468]/30 text-[#245468] hover:bg-[#245468]/5"
               >
                 Back
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting || !connectionTest?.success}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                className="flex-1 bg-[#fc8a2c] hover:bg-[#e07b27] text-white shadow-lg hover:shadow-xl transition-all"
               >
                 {isSubmitting ? (
                   <>

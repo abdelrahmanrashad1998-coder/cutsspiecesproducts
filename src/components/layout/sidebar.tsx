@@ -11,7 +11,8 @@ import {
   Package,
   Store,
   User,
-  Crown
+  Crown,
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
@@ -38,36 +39,43 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-900">
-      <div className="flex h-16 items-center px-4">
-        <div className="flex items-center space-x-2">
-          <Package className="h-8 w-8 text-white" />
-          <span className="text-xl font-bold text-white">Shopify AI</span>
+    <div className="flex h-full w-64 flex-col bg-[#245468]">
+      {/* Brand Header */}
+      <div className="flex h-20 items-center px-6 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="absolute inset-0 bg-[#fc8a2c] blur-lg opacity-50 rounded-full"></div>
+            <Sparkles className="relative h-8 w-8 text-[#fc8a2c]" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Rable</h1>
+            <p className="text-xs text-[#fc8a2c] font-medium">Shopify AI</p>
+          </div>
         </div>
       </div>
       
       {/* User Info */}
       {user && (
-        <div className="px-4 py-3 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
+        <div className="px-4 py-4 border-b border-white/10">
+          <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
             <div className="flex-shrink-0">
               {user.avatar ? (
                 <img
-                  className="h-8 w-8 rounded-full"
+                  className="h-10 w-10 rounded-full ring-2 ring-[#fc8a2c]"
                   src={user.avatar}
                   alt={user.name || user.email}
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
+                <div className="h-10 w-10 rounded-full bg-[#fc8a2c] flex items-center justify-center ring-2 ring-[#fc8a2c]/30">
+                  <User className="h-5 w-5 text-white" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
+              <p className="text-sm font-semibold text-white truncate">
                 {user.name || 'User'}
               </p>
-              <p className="text-xs text-gray-300 truncate">
+              <p className="text-xs text-white/70 truncate">
                 {user.email}
               </p>
             </div>
@@ -75,7 +83,7 @@ export function Sidebar() {
         </div>
       )}
       
-      <nav className="flex-1 space-y-1 px-2 py-4">
+      <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -83,16 +91,16 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
+                'group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200',
                 isActive
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  ? 'bg-[#fc8a2c] text-white shadow-lg shadow-[#fc8a2c]/20'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )}
             >
               <item.icon
                 className={cn(
-                  'mr-3 h-5 w-5 flex-shrink-0',
-                  isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'
+                  'mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-200',
+                  isActive ? 'text-white scale-110' : 'text-white/60 group-hover:text-white group-hover:scale-105'
                 )}
               />
               {item.name}
@@ -101,11 +109,11 @@ export function Sidebar() {
         })}
       </nav>
       
-      <div className="p-4">
+      <div className="p-4 border-t border-white/10">
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start text-gray-300 hover:bg-gray-700 hover:text-white"
+          className="w-full justify-start text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200"
         >
           <LogOut className="mr-3 h-5 w-5" />
           Sign out

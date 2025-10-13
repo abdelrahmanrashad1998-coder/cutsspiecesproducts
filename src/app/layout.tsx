@@ -6,8 +6,8 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 
 export const metadata: Metadata = {
-  title: "Shopify AI Manager",
-  description: "Multi-tenant platform to manage Shopify products with AI-powered features",
+  title: "Rable Shopify AI",
+  description: "Enterprise-level platform to manage Shopify products with AI-powered features",
 };
 
 export default function RootLayout({
