@@ -14,6 +14,14 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { 
   Search, 
   Edit, 
@@ -87,6 +95,8 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [collections, setCollections] = useState<Collection[]>([])
   const [isLoadingCollections, setIsLoadingCollections] = useState(false)
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const { firebaseUser } = useAuth()
 
   useEffect(() => {
@@ -319,6 +329,44 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete || !selectedShop || !firebaseUser) return
+
+    setDeletingProductId(productToDelete.id)
+    try {
+      const token = await firebaseUser.getIdToken()
+      
+      const response = await fetch(`/api/shops/${selectedShop.id}/products/${productToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        // Remove product from local state
+        setProducts(prev => prev.filter(p => p.id !== productToDelete.id))
+        toast.success('Product deleted successfully!')
+        setProductToDelete(null)
+      } else {
+        const errorData = await response.json()
+        toast.error(`Failed to delete product: ${errorData.error}`)
+      }
+    } catch (error) {
+      toast.error('Error deleting product')
+    } finally {
+      setDeletingProductId(null)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setProductToDelete(null)
   }
 
   if (!selectedShop) {
@@ -613,6 +661,20 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(product)}
+                              title="Delete product"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              disabled={deletingProductId === product.id}
+                            >
+                              {deletingProductId === product.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -636,6 +698,44 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
           </>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!productToDelete} onOpenChange={(open) => !open && handleDeleteCancel()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{productToDelete?.title}"? This action cannot be undone and will permanently delete the product from your Shopify store.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={deletingProductId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              disabled={deletingProductId !== null}
+              className="bg-red-600 text-white hover:bg-red-700 border-red-600"
+            >
+              {deletingProductId !== null ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Product
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

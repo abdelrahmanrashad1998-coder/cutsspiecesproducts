@@ -306,3 +306,99 @@ export async function GET(
     )
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ shopId: string; productId: string }> }
+) {
+  try {
+    console.log('=== PRODUCT DELETE API CALLED ===')
+    
+    const decodedToken = await verifyAuthToken(request)
+    const userId = decodedToken.uid
+    const { shopId, productId } = await params
+
+    console.log('Product delete request:', { shopId, productId, userId })
+
+    // Verify the shop belongs to the user
+    const shopDoc = await db.collection('shops').doc(shopId).get()
+    
+    if (!shopDoc.exists) {
+      return NextResponse.json(
+        { error: 'Shop not found' },
+        { status: 404 }
+      )
+    }
+
+    const shopData = shopDoc.data()
+    if (shopData?.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized access to shop' },
+        { status: 403 }
+      )
+    }
+
+    // Get shop credentials
+    const shopifyDomain = shopData.shopifyDomain
+    const accessToken = shopData.shopifyAccessToken
+
+    if (!shopifyDomain || !accessToken) {
+      return NextResponse.json(
+        { error: 'Shop credentials not found' },
+        { status: 400 }
+      )
+    }
+
+    // Delete product from Shopify
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2024-01/products/${productId}.json`
+    const response = await fetch(shopifyUrl, {
+      method: 'DELETE',
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+      },
+    })
+
+    console.log('Shopify delete response status:', response.status)
+
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('Shopify delete error details:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        url: shopifyUrl
+      })
+      
+      return NextResponse.json(
+        { error: 'Failed to delete product from Shopify', details: errorData },
+        { status: response.status }
+      )
+    }
+
+    console.log('Product deleted successfully')
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Product deleted successfully'
+    })
+
+  } catch (error: any) {
+    console.error('Error deleting product:', error)
+    
+    if (error.message === 'No authorization token provided') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        message: 'An unexpected error occurred while deleting the product',
+        details: error.message
+      },
+      { status: 500 }
+    )
+  }
+}
