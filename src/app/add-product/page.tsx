@@ -435,7 +435,7 @@ export default function AddProductPage() {
         {/* Subscription Warning */}
         {subscription && !canGenerateProduct() && (
           <Card className="border-red-200 bg-red-50">
-            <CardContent className="flex items-center gap-4 py-4">
+            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4">
               <AlertCircle className="h-8 w-8 text-red-600 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="font-semibold text-red-900">Product generation limit reached</h3>
@@ -443,8 +443,8 @@ export default function AddProductPage() {
                   You've used {subscription.monthlyProductGenerations} / {subscription.maxMonthlyProducts} products this month. Upgrade to continue.
                 </p>
               </div>
-              <Link href="/pricing">
-                <Button variant="default" className="bg-red-600 hover:bg-red-700">
+              <Link href="/pricing" className="w-full sm:w-auto">
+                <Button variant="default" className="w-full sm:w-auto bg-red-600 hover:bg-red-700">
                   <Crown className="mr-2 h-4 w-4" />
                   Upgrade
                 </Button>
@@ -454,10 +454,10 @@ export default function AddProductPage() {
         )}
 
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Product</h1>
-          <p className="text-gray-600">Upload images and create a new product</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add New Product</h1>
+          <p className="text-sm sm:text-base text-gray-600">Upload images and create a new product</p>
           {subscription && subscription.maxMonthlyProducts !== 'unlimited' && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Products generated: {subscription.monthlyProductGenerations} / {subscription.maxMonthlyProducts} this month
             </p>
           )}
@@ -506,13 +506,13 @@ export default function AddProductPage() {
               </div>
 
               {imageUrls.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
                   {imageUrls.map((url, index) => (
                     <div key={index} className="relative">
                       <img
                         src={url}
                         alt={`Upload ${index + 1}`}
-                        className="w-full h-24 object-cover rounded"
+                        className="w-full h-20 sm:h-24 object-cover rounded"
                       />
                       <Button
                         type="button"
@@ -533,17 +533,19 @@ export default function AddProductPage() {
                   type="button"
                   onClick={analyzeImages}
                   disabled={isAnalyzing}
-                  className="w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white shadow-lg hover:shadow-xl transition-all"
+                  className="w-full bg-[#fc8a2c] hover:bg-[#e07b27] text-white shadow-lg hover:shadow-xl transition-all text-sm sm:text-base"
                 >
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing Images...
+                      <span className="hidden sm:inline">Analyzing Images...</span>
+                      <span className="sm:hidden">Analyzing...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Analyze Images with AI
+                      <span className="hidden sm:inline">Analyze Images with AI</span>
+                      <span className="sm:hidden">Analyze with AI</span>
                     </>
                   )}
                 </Button>
@@ -674,35 +676,35 @@ export default function AddProductPage() {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>Size</Label>
+                      <Label className="text-sm">Size</Label>
                       <Input
                         value={variant.option1 || ''}
                         onChange={(e) => updateVariant(variant.id, 'option1', e.target.value)}
                         placeholder="Small"
-                        className="h-10"
+                        className="h-9 sm:h-10"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Price *</Label>
+                      <Label className="text-sm">Price *</Label>
                       <Input
                         type="number"
                         step="0.01"
                         value={variant.price}
                         onChange={(e) => updateVariant(variant.id, 'price', e.target.value)}
                         placeholder="0.00"
-                        className="h-10"
+                        className="h-9 sm:h-10"
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Color (Optional)</Label>
+                      <Label className="text-sm">Color (Optional)</Label>
                       <Input
                         value={variant.option2 || ''}
                         onChange={(e) => updateVariant(variant.id, 'option2', e.target.value)}
                         placeholder="Red"
-                        className="h-10"
+                        className="h-9 sm:h-10"
                       />
                     </div>
                   </div>
@@ -724,19 +726,21 @@ export default function AddProductPage() {
           </Card>
 
           {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push('/dashboard')}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto order-1 sm:order-2">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Product...
+                  <span className="hidden sm:inline">Creating Product...</span>
+                  <span className="sm:hidden">Creating...</span>
                 </>
               ) : (
                 'Create Product'

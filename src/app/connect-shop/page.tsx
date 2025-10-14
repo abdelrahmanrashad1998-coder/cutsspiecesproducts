@@ -211,7 +211,7 @@ export default function ManageShopsPage() {
         {/* Subscription Warning */}
         {subscription && !canAddShop(shops.length) && !showAddForm && (
           <Card className="border-red-200 bg-red-50">
-            <CardContent className="flex items-center gap-4 py-4">
+            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4">
               <AlertCircle className="h-8 w-8 text-red-600 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="font-semibold text-red-900">Shop limit reached</h3>
@@ -219,8 +219,8 @@ export default function ManageShopsPage() {
                   You've reached your maximum of {subscription.maxShops} shop(s). Upgrade to add more shops.
                 </p>
               </div>
-              <Link href="/pricing">
-                <Button variant="default" className="bg-red-600 hover:bg-red-700">
+              <Link href="/pricing" className="w-full sm:w-auto">
+                <Button variant="default" className="w-full sm:w-auto bg-red-600 hover:bg-red-700">
                   <Crown className="mr-2 h-4 w-4" />
                   Upgrade
                 </Button>
@@ -232,15 +232,15 @@ export default function ManageShopsPage() {
         {/* Header Section */}
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center">
-              <Settings className="mr-3 h-8 w-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center">
+              <Settings className="mr-2 sm:mr-3 h-6 sm:h-8 w-6 sm:w-8" />
               Manage Shops
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Connect, edit, and manage your Shopify stores
             </p>
             {subscription && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Connected shops: {shops.length} / {subscription.maxShops === 999 ? 'Unlimited' : subscription.maxShops}
               </p>
             )}
@@ -250,14 +250,15 @@ export default function ManageShopsPage() {
         {/* Existing Shops */}
         <Card className="mb-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <CardTitle className="flex items-center text-base sm:text-lg">
                 <Store className="mr-2 h-5 w-5" />
                 Connected Shops ({shops.length})
               </CardTitle>
               <Button 
                 onClick={() => setShowAddForm(true)}
                 disabled={!canAddShop(shops.length)}
+                className="w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Shop
@@ -277,23 +278,23 @@ export default function ManageShopsPage() {
                 <p className="text-sm">Add your first Shopify store to get started</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {shops.map((shop) => (
                   <div key={shop.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{shop.shopName || shop.shopifyDomain}</h3>
+                      <h3 className="font-medium text-sm sm:text-base truncate flex-1 mr-2">{shop.shopName || shop.shopifyDomain}</h3>
                       {shop.isActive ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-600" />
+                        <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
                       )}
                     </div>
-                    <p className="text-sm text-gray-600">{shop.shopifyDomain}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">{shop.shopifyDomain}</p>
                     {shop.shopEmail && (
-                      <p className="text-sm text-gray-500">{shop.shopEmail}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">{shop.shopEmail}</p>
                     )}
                     <div className="mt-3 flex items-center justify-between">
-                      <Badge variant={shop.isActive ? 'default' : 'secondary'}>
+                      <Badge variant={shop.isActive ? 'default' : 'secondary'} className="text-xs">
                         {shop.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                       <div className="flex space-x-2">
@@ -301,6 +302,7 @@ export default function ManageShopsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => startEditing(shop)}
+                          className="h-8 w-8 p-0"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -308,6 +310,7 @@ export default function ManageShopsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteShop(shop.id)}
+                          className="h-8 w-8 p-0"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -324,8 +327,8 @@ export default function ManageShopsPage() {
         {showAddForm && (
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle className="flex items-center text-base sm:text-lg">
                   {editingShop ? (
                     <>
                       <Edit className="mr-2 h-5 w-5" />
@@ -338,7 +341,7 @@ export default function ManageShopsPage() {
                     </>
                   )}
                 </CardTitle>
-                <Button variant="outline" onClick={resetForm}>
+                <Button variant="outline" onClick={resetForm} className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </div>
@@ -483,10 +486,10 @@ export default function ManageShopsPage() {
                   </p>
                 </div>
 
-                <div className="flex space-x-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Button 
                     type="submit" 
-                    className="flex-1" 
+                    className="flex-1 order-1" 
                     disabled={isLoading || (editingShop ? false : !connectionTest?.success)}
                   >
                     {isLoading ? (
@@ -502,6 +505,7 @@ export default function ManageShopsPage() {
                     type="button" 
                     variant="outline" 
                     onClick={resetForm}
+                    className="order-2 sm:w-auto"
                   >
                     Cancel
                   </Button>

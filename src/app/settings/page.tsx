@@ -47,8 +47,8 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600">Manage your application settings</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage your application settings</p>
         </div>
 
         {/* Default Vendor Configuration */}
@@ -108,11 +108,11 @@ export default function SettingsPage() {
               </div>
             )}
             
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button 
                 onClick={handleSaveSettings} 
                 disabled={saving}
-                className="flex items-center"
+                className="flex items-center justify-center w-full sm:w-auto"
               >
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Settings'}
@@ -120,6 +120,7 @@ export default function SettingsPage() {
               <Button 
                 onClick={handleClearSettings} 
                 variant="outline"
+                className="w-full sm:w-auto"
               >
                 Reset to Defaults
               </Button>

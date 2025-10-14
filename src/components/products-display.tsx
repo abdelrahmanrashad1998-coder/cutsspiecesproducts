@@ -505,19 +505,22 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
               </div>
             ) : (
               <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
-                      <TableHead className="min-w-[200px]">Product</TableHead>
-                      <TableHead className="min-w-[120px] hidden md:table-cell">Vendor</TableHead>
-                      <TableHead className="min-w-[120px] hidden lg:table-cell">Collection</TableHead>
-                      <TableHead className="w-24 hidden sm:table-cell">Price</TableHead>
-                      <TableHead className="w-24">Status</TableHead>
-                      <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
-                      <TableHead className="w-24">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <div className="overflow-hidden border-x sm:border sm:rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-16 hidden sm:table-cell">Image</TableHead>
+                            <TableHead className="min-w-[200px]">Product</TableHead>
+                            <TableHead className="min-w-[120px] hidden md:table-cell">Vendor</TableHead>
+                            <TableHead className="min-w-[120px] hidden lg:table-cell">Collection</TableHead>
+                            <TableHead className="w-24 hidden sm:table-cell">Price</TableHead>
+                            <TableHead className="w-24">Status</TableHead>
+                            <TableHead className="w-32 hidden lg:table-cell">Created</TableHead>
+                            <TableHead className="w-24">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
                       <TableRow key={product.id} className="group">
@@ -681,20 +684,23 @@ export function ProductsDisplay({ selectedShop }: ProductsDisplayProps) {
                     ))}
                   </TableBody>
                 </Table>
-                
-                {/* Pagination */}
-                <div className="mt-4">
-                  <DataTablePagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={filteredProducts.length}
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={handlePageChange}
-                    onItemsPerPageChange={handleItemsPerPageChange}
-                  />
-                </div>
               </div>
-            )}
+            </div>
+          </div>
+                
+          {/* Pagination */}
+          <div className="mt-4">
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredProducts.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
+          </div>
+        </div>
+      )}
           </>
         )}
       </CardContent>

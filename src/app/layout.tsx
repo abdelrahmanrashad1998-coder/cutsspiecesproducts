@@ -10,6 +10,13 @@ export const metadata: Metadata = {
   description: "Enterprise-level platform to manage Shopify products with AI-powered features",
 };
 
+// Add viewport configuration for mobile responsiveness
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
